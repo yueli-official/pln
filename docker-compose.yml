@@ -1,0 +1,11 @@
+services:
+  pln:
+    image: ghcr.io/yueli-official/pln:latest
+    container_name: pln
+    platform: linux/amd64
+    ports:
+      - "9000:9000"
+    volumes:
+      # 挂载数据库
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml:ro

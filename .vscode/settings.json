@@ -1,0 +1,41 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "frontend/src/auto-imports.d.ts": true,
+    "frontend/src/components.d.ts": true,
+    "frontend/tsconfig.json": true,
+    "frontend/.editorconfig": true,
+    "frontend/.gitattributes": true,
+    "frontend/.gitignore": true,
+    "frontend/.prettierrc.json": true,
+    "frontend/env.d.ts": true,
+    "frontend/eslint.config.ts": true,
+    "frontend/pnpm-lock.yaml": true,
+    "frontend/tsconfig.app.json": true,
+    "frontend/tsconfig.node.json": true,
+    "frontend/node_modules": true,
+    "go.sum": true,
+    "Taskfile.yml": true
+  },
+  "hide-files.files": [
+    "frontend/src/auto-imports.d.ts",
+    "frontend/src/components.d.ts",
+    "frontend/tsconfig.json",
+    "frontend/.editorconfig",
+    "frontend/.gitattributes",
+    "frontend/.gitignore",
+    "frontend/.prettierrc.json",
+    "frontend/env.d.ts",
+    "frontend/eslint.config.ts",
+    "frontend/pnpm-lock.yaml",
+    "frontend/tsconfig.app.json",
+    "frontend/tsconfig.node.json",
+    "frontend/node_modules",
+    "go.sum",
+    "Taskfile.yml"
+  ]
+}

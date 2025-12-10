@@ -1,0 +1,111 @@
+/* ============================================
+   响应式间距类 (Spacing)
+   ============================================ */
+
+@utility px-responsive {
+  @apply px-2 sm:px-3 md:px-4 lg:px-5 xl:px-6;
+}
+
+@utility py-responsive {
+  @apply py-2 sm:py-3 md:py-4 lg:py-5 xl:py-6;
+}
+
+@utility p-responsive {
+  @apply p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6;
+}
+
+@utility space-y-responsive {
+  @apply space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-5 xl:space-y-6;
+}
+
+@utility space-x-responsive {
+  @apply space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-5 xl:space-x-6;
+}
+
+@utility mt-responsive {
+  @apply mt-2 sm:mt-3 md:mt-4 lg:mt-5 xl:mt-6;
+}
+
+@utility mb-responsive {
+  @apply mb-2 sm:mb-3 md:mb-4 lg:mb-5 xl:mb-6;
+}
+
+@utility gap-responsive {
+  @apply gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6;
+}
+
+@utility gap-x-responsive {
+  @apply gap-x-2 sm:gap-x-3 md:gap-x-4 lg:gap-x-5 xl:gap-x-6;
+}
+
+@utility gap-y-responsive {
+  @apply gap-y-2 sm:gap-y-3 md:gap-y-4 lg:gap-y-5 xl:gap-y-6;
+}
+
+/* ============================================
+   响应式字体类 (Typography)
+   ============================================ */
+
+@utility heading-xl-responsive {
+  @apply text-2xl sm:text-3xl md:text-4xl  font-bold;
+}
+
+@utility heading-lg-responsive {
+  @apply text-xl sm:text-2xl md:text-3xl  font-bold;
+}
+
+@utility heading-md-responsive {
+  @apply text-lg sm:text-xl md:text-2xl  font-semibold;
+}
+
+@utility heading-sm-responsive {
+  @apply text-base sm:text-lg md:text-xl   font-semibold;
+}
+
+@utility text-subtitle-responsive {
+  @apply text-sm sm:text-base md:text-lg  font-medium;
+}
+
+@utility text-body-responsive {
+  @apply text-xs sm:text-sm md:text-base;
+}
+
+@utility text-caption-responsive {
+  @apply text-xs sm:text-xs md:text-sm;
+}
+
+/* ============================================
+   响应式容器类 (Containers)
+   ============================================ */
+
+@utility container-responsive {
+  @apply px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 mx-auto;
+}
+
+@utility w-responsive-full {
+  @apply w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8;
+}
+
+@utility card-responsive {
+  @apply p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8 rounded-lg;
+}
+
+/* ============================================
+   响应式网格类 (Grid)
+   ============================================ */
+
+@utility grid-cols-responsive {
+  @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+@utility grid-cols-responsive-wide {
+  @apply grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4;
+}
+
+/* ============================================
+   响应式圆角类 (Border Radius)
+   ============================================ */
+
+@utility rounded-responsive {
+  @apply rounded-md sm:rounded-md md:rounded-lg xl:rounded-xl;
+}

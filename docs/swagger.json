@@ -1,0 +1,942 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/artworks": {
+            "get": {
+                "description": "分页获取作品列表，支持过滤",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "获取作品列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "分类",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "艺术家",
+                        "name": "artist",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ArtworkResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的艺术作品",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "创建作品",
+                "parameters": [
+                    {
+                        "description": "作品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ArtworkCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "创建成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ArtworkResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/category/{category}": {
+            "get": {
+                "description": "获取指定分类的作品列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "按分类获取作品",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分类",
+                        "name": "category",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/random": {
+            "get": {
+                "description": "随机获取指定数量的作品",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "随机获取作品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "数量",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "分类",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "艺术家",
+                        "name": "artist",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ArtworkResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/upload": {
+            "post": {
+                "description": "上传图片到 CDN 并同时创建艺术作品记录",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "上传文件并创建作品",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "要上传的文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "作品标题",
+                        "name": "title",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "艺术家名称",
+                        "name": "artist",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "作品描述",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "分类",
+                        "name": "category",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "头像URL",
+                        "name": "avatar_url",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/{id}": {
+            "get": {
+                "description": "获取指定ID的作品详情",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "获取作品详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ArtworkResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新指定ID的作品信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "更新作品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "作品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ArtworkUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ArtworkResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定ID的作品",
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "删除作品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/artworks/{id}/bookmark": {
+            "post": {
+                "description": "增加作品的收藏数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "增加收藏数",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/{id}/like": {
+            "post": {
+                "description": "增加作品的点赞数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "增加作品点赞数",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/{id}/unbookmark": {
+            "post": {
+                "description": "减少作品的收藏数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "取消收藏",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/artworks/{id}/unlike": {
+            "post": {
+                "description": "减少作品的点赞数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Artwork"
+                ],
+                "summary": "取消点赞",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/files": {
+            "post": {
+                "description": "上传图片或文件到 CDN",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "上传文件到 CDN",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "要上传的文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "上传成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.FileInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "从三方服务删除文件",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "删除文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文件路径",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.DeleteFileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.ArtworkCreateRequest": {
+            "type": "object",
+            "required": [
+                "artist",
+                "title",
+                "url"
+            ],
+            "properties": {
+                "artist": {
+                    "type": "string"
+                },
+                "avatar_url": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "cdn_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "is_published": {
+                    "type": "boolean"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ArtworkResponse": {
+            "type": "object",
+            "properties": {
+                "artist": {
+                    "type": "string"
+                },
+                "avatar_url": {
+                    "type": "string"
+                },
+                "bookmarks": {
+                    "type": "integer"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "cdn_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_published": {
+                    "type": "boolean"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "local_path": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ArtworkUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "artist": {
+                    "type": "string"
+                },
+                "avatar_url": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "cdn_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_published": {
+                    "type": "boolean"
+                },
+                "local_path": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeleteFileResponse": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "description": "是否成功删除",
+                    "type": "boolean"
+                },
+                "path": {
+                    "description": "被删除文件路径",
+                    "type": "string"
+                }
+            }
+        },
+        "models.FileInfo": {
+            "type": "object",
+            "properties": {
+                "access_url": {
+                    "description": "访问信息",
+                    "type": "string"
+                },
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "file_type": {
+                    "description": "文件属性",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FileType"
+                        }
+                    ]
+                },
+                "folder_path": {
+                    "description": "父目录路径",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "元数据（用于扩展不同文件类型的信息）",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FileMetadata"
+                        }
+                    ]
+                },
+                "modified_at": {
+                    "description": "修改时间",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "基本信息",
+                    "type": "string"
+                },
+                "original_name": {
+                    "description": "原始文件名",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "路径信息",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "文件大小（字节）",
+                    "type": "integer"
+                },
+                "space": {
+                    "description": "空间信息",
+                    "type": "string"
+                },
+                "storage_type": {
+                    "description": "存储类型（local/smms/aliyun等）",
+                    "type": "string"
+                },
+                "upload_time": {
+                    "description": "时间信息",
+                    "type": "integer"
+                },
+                "variants": {
+                    "description": "缩略图、预览等变体",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ResourceVariant"
+                    }
+                }
+            }
+        },
+        "models.FileMetadata": {
+            "type": "object",
+            "properties": {
+                "bit_rate": {
+                    "description": "音频特定",
+                    "type": "integer"
+                },
+                "color_space": {
+                    "type": "string"
+                },
+                "custom": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "duration": {
+                    "description": "视频特定",
+                    "type": "integer"
+                },
+                "frame_rate": {
+                    "type": "number"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "description": "通用",
+                    "type": "string"
+                },
+                "orientation": {
+                    "type": "string"
+                },
+                "resolution": {
+                    "type": "string"
+                },
+                "sample_rate": {
+                    "type": "integer"
+                },
+                "video_codec": {
+                    "type": "string"
+                },
+                "width": {
+                    "description": "图片特定",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.FileType": {
+            "type": "string",
+            "enum": [
+                "image",
+                "video",
+                "document",
+                "audio",
+                "other"
+            ],
+            "x-enum-varnames": [
+                "FileTypeImage",
+                "FileTypeVideo",
+                "FileTypeDocument",
+                "FileTypeAudio",
+                "FileTypeOther"
+            ]
+        },
+        "models.ResourceVariant": {
+            "type": "object",
+            "properties": {
+                "access_url": {
+                    "description": "访问URL",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "path": {
+                    "description": "逻辑路径",
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "thumbnail, preview, compressed 等",
+                    "type": "string"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "响应数据"
+                },
+                "message": {
+                    "description": "响应消息",
+                    "type": "string"
+                },
+                "request_id": {
+                    "description": "请求追踪ID",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "description": "时间戳(毫秒)",
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}

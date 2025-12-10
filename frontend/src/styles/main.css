@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@import './base.css';
+@import './theme.css';
+@import './layout.css';
+@import './plugins.css';
+
+@plugin "@iconify/tailwind4";
+
+@reference '@yuelioi/yami/src/index.css';

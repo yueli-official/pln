@@ -17,7 +17,7 @@ import type {
 
 export function useApi() {
   // API 配置
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:9000/api/v1'
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
   const API_KEY = localStorage.getItem('api_key') || ''
 
   // 状态

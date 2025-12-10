@@ -16,6 +16,15 @@
         <button @click="error = null" class="btn btn-sm btn-ghost">关闭</button>
       </div>
 
+      <!-- 已成功上传的文件展示 -->
+      <div v-if="uploadedFiles.length > 0" class="alert alert-success mb-8">
+        <span class="icon-[lucide--check-circle] size-5"></span>
+        <div class="flex-1">
+          <span>已成功上传 {{ uploadedFiles.length }} 个作品</span>
+        </div>
+        <button @click="clearUploadedFiles" class="btn btn-sm btn-ghost">清空</button>
+      </div>
+
       <!-- 上传区域 -->
       <div
         @drop.prevent="handleDrop"
@@ -35,11 +44,11 @@
         <button @click="triggerFileInput" class="btn btn-primary">选择文件</button>
       </div>
 
-      <!-- 已选择文件列表 -->
+      <!-- 待上传文件列表 -->
       <div v-if="files.length > 0" class="mb-8">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold">已选择 {{ files.length }} 个文件</h3>
-          <button @click="files = []" class="btn btn-sm btn-destructive">
+          <h3 class="text-xl font-semibold">待上传 {{ files.length }} 个文件</h3>
+          <button @click="clearFailedFiles" class="btn btn-sm btn-destructive">
             <span class="icon-[lucide--trash-2] size-4"></span>
             清空
           </button>
@@ -70,15 +79,23 @@
               <p class="font-medium truncate">{{ file.name }}</p>
               <p class="text-sm text-muted-foreground">{{ formatFileSize(file.size) }}</p>
 
-              <!-- 进度条 -->
-              <div v-if="uploadProgress[index] !== undefined" class="mt-2">
-                <div class="progress progress-primary h-2">
-                  <div
-                    class="progress-bar h-full transition-all"
-                    :style="{ width: uploadProgress[index] + '%' }"
-                  ></div>
+              <!-- 上传状态 -->
+              <div v-if="uploadStatus[index]" class="mt-2">
+                <div v-if="uploadStatus[index].type === 'progress'" class="space-y-1">
+                  <div class="progress progress-primary h-2">
+                    <div
+                      class="progress-bar h-full transition-all"
+                      :style="{ width: uploadStatus[index].value + '%' }"
+                    ></div>
+                  </div>
+                  <p class="text-xs text-muted-foreground">{{ uploadStatus[index].value }}%</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">{{ uploadProgress[index] }}%</p>
+                <div
+                  v-else-if="uploadStatus[index].type === 'error'"
+                  class="text-xs text-destructive"
+                >
+                  {{ uploadStatus[index].message }}
+                </div>
               </div>
             </div>
 
@@ -206,12 +223,6 @@
           </RouterLink>
         </div>
       </div>
-
-      <!-- 上传完成信息 -->
-      <div v-if="uploadedCount > 0" class="alert alert-success">
-        <span class="icon-[lucide--check-circle] size-5"></span>
-        <span>成功上传 {{ uploadedCount }} 个作品</span>
-      </div>
     </div>
   </div>
 </template>
@@ -226,11 +237,13 @@ const { uploadAndCreateArtwork } = useApi()
 // 状态
 const files = ref<File[]>([])
 const previews = ref<string[]>([])
+const uploadedFiles = ref<string[]>([]) // 已成功上传的文件名列表
 const isDragging = ref(false)
 const uploading = ref(false)
 const error = ref<string | null>(null)
-const uploadProgress = ref<Record<number, number>>({})
-const uploadedCount = ref(0)
+const uploadStatus = ref<
+  Record<number, { type: 'progress' | 'error'; value?: number; message?: string }>
+>({})
 
 // 表单数据
 const formData = ref({
@@ -252,7 +265,6 @@ const handleFileSelect = (event: Event) => {
   if (target.files) {
     addFiles(Array.from(target.files))
   }
-  // 重置 input，以便再次选择相同文件
   target.value = ''
 }
 
@@ -280,23 +292,20 @@ const handlePaste = (event: ClipboardEvent) => {
   const items = event.clipboardData?.items
   if (!items) return
 
-  const files: File[] = []
+  const pastedFiles: File[] = []
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
-    if (!item) {
-      continue
-    }
-    // 检查是否是图片
+    if (!item) continue
     if (item.kind === 'file' && item.type.startsWith('image/')) {
       const file = item.getAsFile()
       if (file) {
-        files.push(file)
+        pastedFiles.push(file)
       }
     }
   }
 
-  if (files.length > 0) {
-    addFiles(files)
+  if (pastedFiles.length > 0) {
+    addFiles(pastedFiles)
   } else {
     error.value = '粘贴板中没有图片'
   }
@@ -310,7 +319,6 @@ const addFiles = (newFiles: File[]) => {
     error.value = '只支持图片文件'
   }
 
-  // 验证文件大小（100MB）
   const invalidSize = validFiles.some((file) => file.size > 100 * 1024 * 1024)
   if (invalidSize) {
     error.value = '文件大小不能超过 100MB'
@@ -318,14 +326,12 @@ const addFiles = (newFiles: File[]) => {
   }
 
   validFiles.forEach((file) => {
-    // 检查是否已存在
     if (files.value.some((f) => f.name === file.name && f.size === file.size)) {
       return
     }
 
     files.value.push(file)
 
-    // 生成预览
     const reader = new FileReader()
     reader.onload = (e) => {
       previews.value.push(e.target?.result as string)
@@ -339,17 +345,28 @@ const removeFile = (index: number) => {
   files.value.splice(index, 1)
   previews.value.splice(index, 1)
 
-  // 重新索引 uploadProgress
-  const newProgress: Record<number, number> = {}
-  Object.entries(uploadProgress.value).forEach(([key, value]) => {
+  const newStatus: Record<number, any> = {}
+  Object.entries(uploadStatus.value).forEach(([key, value]) => {
     const oldIndex = parseInt(key)
     if (oldIndex > index) {
-      newProgress[oldIndex - 1] = value
+      newStatus[oldIndex - 1] = value
     } else if (oldIndex < index) {
-      newProgress[oldIndex] = value
+      newStatus[oldIndex] = value
     }
   })
-  uploadProgress.value = newProgress
+  uploadStatus.value = newStatus
+}
+
+// 清空失败文件
+const clearFailedFiles = () => {
+  files.value = []
+  previews.value = []
+  uploadStatus.value = {}
+}
+
+// 清空已上传文件列表
+const clearUploadedFiles = () => {
+  uploadedFiles.value = []
 }
 
 // 处理添加标签
@@ -369,15 +386,14 @@ const handleAddTag = () => {
 const uploadFiles = async () => {
   uploading.value = true
   error.value = null
-  uploadedCount.value = 0
 
-  // 确保标签已解析
   handleAddTag()
 
   for (let i = 0; i < files.value.length; i++) {
     try {
       const file = files.value[i]
       if (!file) continue
+
       await uploadAndCreateArtwork(
         file,
         {
@@ -389,33 +405,38 @@ const uploadFiles = async () => {
           tags: formData.value.tags,
         },
         (progress) => {
-          uploadProgress.value[i] = progress
+          uploadStatus.value[i] = { type: 'progress', value: progress }
         },
       )
-      uploadedCount.value++
+
+      // 上传成功：添加到已上传列表，从待上传列表中移除
+      uploadedFiles.value.push(file.name)
+      files.value.splice(i, 1)
+      previews.value.splice(i, 1)
+
+      // 调整索引
+      const newStatus: Record<number, any> = {}
+      Object.entries(uploadStatus.value).forEach(([key, value]) => {
+        const oldIndex = parseInt(key)
+        if (oldIndex > i) {
+          newStatus[oldIndex - 1] = value
+        } else if (oldIndex < i) {
+          newStatus[oldIndex] = value
+        }
+      })
+      uploadStatus.value = newStatus
+      i-- // 因为移除了当前项，索引需要回退
     } catch (err) {
       error.value = `上传失败: ${(err as Error).message}`
-      break
+      // 记录该文件的错误状态，但继续处理下一个文件
+      uploadStatus.value[i] = {
+        type: 'error',
+        message: (err as Error).message,
+      }
     }
   }
 
   uploading.value = false
-
-  if (uploadedCount.value === files.value.length) {
-    // 清空表单
-    files.value = []
-    previews.value = []
-    uploadProgress.value = {}
-    formData.value = {
-      title: '普拉娜',
-      artist: '未知艺术家',
-      description: '',
-      category: '普拉娜',
-      avatar_url: '',
-      tagsInput: '',
-      tags: [],
-    }
-  }
 }
 
 // 格式化文件大小

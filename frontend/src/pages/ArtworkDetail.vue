@@ -487,6 +487,7 @@ const handleDelete = async () => {
 
 // 生命周期
 onMounted(() => {
+  artworkStore.currentArtwork = null
   loadArtwork()
 })
 </script>

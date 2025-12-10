@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"pln/conf"
@@ -85,9 +86,19 @@ func main() {
 	corsConfig.AllowCredentials = true
 	corsConfig.MaxAge = 24 * time.Hour
 
+	// 输出
+	logger.Info().Str("app_id", conf.Config.FileServer.AppID).Str("file_server", conf.Config.FileServer.BaseURL).Msg("文件服务注册完毕")
+
+	// 配置默认端口
+	port := conf.Config.Server.Port
+	if port == 0 {
+		port = 9000
+	}
+	addr := ":" + strconv.Itoa(port)
+
 	// 服务器配置
 	cfg := server.ServerConfig{
-		Addr:      ":9000",
+		Addr:      addr,
 		Logger:    logger,
 		Mode:      os.Getenv("APP_MODE"),
 		APIPrefix: "/api/v1",

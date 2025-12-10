@@ -32,8 +32,6 @@ type FileOperationConfig struct {
 
 type FileServerConfig struct {
 	BaseURL      string `mapstructure:"base_url"`     // 基础URL: http://localhost:9001
-	UploadURL    string `mapstructure:"upload_url"`   // 上传端点: http://localhost:9001/api/v1/files
-	DeleteURL    string `mapstructure:"delete_url"`   // 删除端点: http://localhost:9001/api/v1/files
 	APIKey       string `mapstructure:"api_key"`      // API密钥: website_api_key_123456
 	AppID        string `mapstructure:"app_id"`       //
 	CDNSpaceID   string `mapstructure:"cdn_space_id"` //

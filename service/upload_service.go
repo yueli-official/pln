@@ -10,6 +10,8 @@ import (
 
 	"pln/conf"
 	"pln/models"
+
+	"github.com/rs/zerolog/log"
 )
 
 type FileService struct {
@@ -41,15 +43,21 @@ type UploadOptions struct {
 // ============ 上传文件 ============
 
 // UploadFile 上传文件到三方服务
-func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceId string) (*models.FileInfo, error) {
-	url := fs.cfg.FileServer.UploadURL
+func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceID string) (*models.FileInfo, error) {
+	url := fs.cfg.FileServer.BaseURL + "/api/v1/files"
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
 	// 添加表单字段
 	writer.WriteField("app_id", fs.cfg.FileServer.AppID)
-	writer.WriteField("space_id", spaceId)
+	writer.WriteField("space_id", spaceID)
+
+	log.Info().
+		Str("app_id", fs.cfg.FileServer.AppID).
+		Str("space_id", spaceID).
+		Str("file_name", fileName).
+		Msg("上传文件")
 
 	// 添加缩略图配置
 	options := UploadOptions{
@@ -113,15 +121,21 @@ func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceId strin
 
 // ============ 删除文件 ============
 
-// DeleteFile 删除文件从三方服务
+// 删除文件
 func (fs *FileService) DeleteFile(appID string, spaceID string, path string) (bool, error) {
 	url := fmt.Sprintf("%s?app_id=%s&space_id=%s&path=%s",
-		fs.cfg.FileServer.DeleteURL, appID, spaceID, path)
+		fs.cfg.FileServer.BaseURL+"/api/v1/files", appID, spaceID, path)
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return false, err
 	}
+
+	log.Info().
+		Str("app_id", fs.cfg.FileServer.AppID).
+		Str("space_id", spaceID).
+		Str("path", path).
+		Msg("删除文件")
 
 	req.Header.Set("X-App-ID", appID)
 	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)
@@ -162,6 +176,12 @@ func (fs *FileService) GetFileInfo(appID string, spaceID string, path string) (*
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info().
+		Str("app_id", fs.cfg.FileServer.AppID).
+		Str("space_id", spaceID).
+		Str("path", path).
+		Msg("获取文件信息")
 
 	req.Header.Set("X-App-ID", appID)
 	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)

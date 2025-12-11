@@ -2,11 +2,14 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"pln/conf"
 	"pln/models"
@@ -41,8 +44,6 @@ type UploadOptions struct {
 }
 
 // ============ 上传文件 ============
-
-// UploadFile 上传文件到三方服务
 func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceID string) (*models.FileInfo, error) {
 	url := fs.cfg.FileServer.BaseURL + "/api/v1/files"
 
@@ -69,52 +70,127 @@ func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceID strin
 	// 添加文件
 	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
-		return nil, err
+		log.Error().Err(err).Str("file_name", fileName).Msg("创建表单字段失败")
+		return nil, fmt.Errorf("添加文件失败: %w", err)
 	}
+
 	if _, err := io.Copy(part, file); err != nil {
-		return nil, err
+		log.Error().Err(err).Str("file_name", fileName).Msg("复制文件内容失败")
+		return nil, fmt.Errorf("复制文件内容失败: %w", err)
 	}
+
 	writer.Close()
 
 	// 发送请求
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, err
+		log.Error().Err(err).Str("url", url).Msg("创建请求失败")
+		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("X-App-ID", fs.cfg.FileServer.AppID)
 	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)
 
+	// 添加超时设置
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
+
 	resp, err := fs.cli.Do(req)
 	if err != nil {
-		return nil, err
+		log.Error().
+			Err(err).
+			Str("url", url).
+			Str("file_name", fileName).
+			Str("space_id", spaceID).
+			Msg("上传请求失败")
+
+		if errors.Is(err, context.DeadlineExceeded) {
+			log.Error().Msg("上传超时")
+		}
+		return nil, fmt.Errorf("上传失败: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var result ThirdPartyResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	// 读取完整响应体，避免 EOF 错误
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("file_name", fileName).
+			Msg("读取响应失败")
+		return nil, fmt.Errorf("read response failed: %w", err)
 	}
 
+	// 先检查状态码
+	if resp.StatusCode != http.StatusOK {
+		log.Error().
+			Int("status_code", resp.StatusCode).
+			Str("response", string(respData)).
+			Str("file_name", fileName).
+			Str("space_id", spaceID).
+			Msg("服务器返回错误")
+		return nil, fmt.Errorf("上传状态码错误 %d: %s", resp.StatusCode, string(respData))
+	}
+
+	//  解析 JSON 响应
+	var result ThirdPartyResponse
+	if err := json.Unmarshal(respData, &result); err != nil {
+		log.Error().
+			Err(err).
+			Str("response", string(respData)).
+			Str("file_name", fileName).
+			Msg("解析响应 JSON 失败")
+		return nil, fmt.Errorf("解析响应 JSON 失败: %w", err)
+	}
+
+	// 检查业务逻辑错误
 	if result.Code != 0 {
-		return nil, fmt.Errorf("upload failed: %s", result.Message)
+		log.Error().
+			Int("code", result.Code).
+			Str("message", result.Message).
+			Str("file_name", fileName).
+			Str("space_id", spaceID).
+			Msg("服务器业务错误")
+		return nil, fmt.Errorf("上传失败: code=%d, message=%s", result.Code, result.Message)
+	}
+
+	// 检查返回数据是否为空
+	if result.Data == nil {
+		log.Error().
+			Str("file_name", fileName).
+			Str("space_id", spaceID).
+			Msg("服务器返回数据为空")
+		return nil, fmt.Errorf("服务器返回数据为空")
 	}
 
 	// 解析返回的 FileInfo
 	fileInfoData, _ := json.Marshal(result.Data)
 	var fileInfo models.FileInfo
 	if err := json.Unmarshal(fileInfoData, &fileInfo); err != nil {
-		return nil, err
+		log.Error().
+			Err(err).
+			Str("file_name", fileName).
+			Msg("解析文件信息失败")
+		return nil, fmt.Errorf("解析文件信息失败: %w", err)
 	}
 
+	// 构建完整的访问 URL
 	fileInfo.AccessURL = fs.cfg.FileServer.BaseURL + fileInfo.AccessURL
 
+	// 处理缩略图 URL
 	for i, v := range fileInfo.Variants {
 		if v.Type == "thumbnail" {
 			fileInfo.Variants[i].AccessURL = fs.cfg.FileServer.BaseURL + v.AccessURL
 		}
 	}
+
+	log.Info().
+		Str("file_name", fileName).
+		Str("space_id", spaceID).
+		Str("access_url", fileInfo.AccessURL).
+		Msg("文件上传成功")
 
 	return &fileInfo, nil
 }

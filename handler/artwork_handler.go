@@ -433,9 +433,8 @@ func (h *ArtworkHandler) DecrementBookmarks(c *gin.Context) {
 		GJSON(c)
 }
 
-// UploadAndCreateArtwork 上传文件并创建作品
 // @Summary 上传文件并创建作品
-// @Description 上传图片到 CDN 并同时创建艺术作品记录
+// @Description 上传图片到 CDN 并同时创建艺术作品记录（带事务保证）
 // @Tags Upload
 // @Accept multipart/form-data
 // @Produce json
@@ -484,7 +483,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		return
 	}
 
-	// 打开原始文件
+	// ============ 步骤 1：上传本地存储 ============
 	src, err := file.Open()
 	if err != nil {
 		log.Error().Err(err).Msg("打开上传文件失败")
@@ -495,7 +494,6 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 	}
 	defer src.Close()
 
-	// 上传原图到本地存储
 	localFileInfo, err := h.fileService.UploadFile(src, file.Filename, h.cfg.FileServer.LocalSpaceID)
 	if err != nil {
 		log.Error().Err(err).Msg("上传到本地存储失败")
@@ -505,10 +503,17 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		return
 	}
 
-	// 重新打开文件进行压缩和CDN上传
+	// 保存本地文件路径，用于错误回滚
+	localFilePath := localFileInfo.Path
+
+	// ============ 步骤 2：上传 CDN ============
 	src2, err := file.Open()
 	if err != nil {
 		log.Error().Err(err).Msg("打开上传文件失败")
+		// 回滚本地存储
+		if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.LocalSpaceID, localFilePath); delErr != nil {
+			log.Error().Err(delErr).Str("path", localFilePath).Msg("清理本地文件失败")
+		}
 		response.InternalError("上传失败").
 			WithRequestID(c.GetString("request_id")).
 			GJSON(c)
@@ -516,7 +521,6 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 	}
 	defer src2.Close()
 
-	// 如果文件超过5MB，需要压缩并转为JPG
 	const maxFileSize = 5 * 1024 * 1024
 	var fileToUpload io.Reader
 	var uploadFilename string
@@ -525,6 +529,9 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		compressedFile, err := h.compressImageToJPEG(src2)
 		if err != nil {
 			log.Error().Err(err).Msg("图片压缩失败")
+			if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.LocalSpaceID, localFilePath); delErr != nil {
+				log.Error().Err(delErr).Str("path", localFilePath).Msg("清理本地文件失败")
+			}
 			response.InternalError("图片压缩失败").
 				WithRequestID(c.GetString("request_id")).
 				GJSON(c)
@@ -533,12 +540,14 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		defer compressedFile.Close()
 
 		fileToUpload = compressedFile
-		// 生成新的文件名，转为JPG格式
 		uploadFilename = fmt.Sprintf("%s_compressed.jpg", strings.TrimSuffix(file.Filename, ext))
 	} else {
 		src3, err := file.Open()
 		if err != nil {
 			log.Error().Err(err).Msg("打开上传文件失败")
+			if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.LocalSpaceID, localFilePath); delErr != nil {
+				log.Error().Err(delErr).Str("path", localFilePath).Msg("清理本地文件失败")
+			}
 			response.InternalError("上传失败").
 				WithRequestID(c.GetString("request_id")).
 				GJSON(c)
@@ -553,12 +562,20 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 	fileInfo, err := h.fileService.UploadFile(fileToUpload, uploadFilename, h.cfg.FileServer.CDNSpaceID)
 	if err != nil {
 		log.Error().Err(err).Msg("上传到 CDN 失败")
+		// 回滚本地存储
+		if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.LocalSpaceID, localFilePath); delErr != nil {
+			log.Error().Err(delErr).Str("path", localFilePath).Msg("清理本地文件失败")
+		}
 		response.InternalError("上传到 CDN 失败").
 			WithRequestID(c.GetString("request_id")).
 			GJSON(c)
 		return
 	}
 
+	// 保存 CDN 文件路径，用于错误回滚
+	cdnFilePath := fileInfo.Path
+
+	// ============ 步骤 3：创建数据库记录（事务） ============
 	// 提取缩略图URL
 	thumbnailURL := ""
 	if fileInfo.Variants != nil {
@@ -570,7 +587,6 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		}
 	}
 
-	// 创建作品
 	description := c.PostForm("description")
 	category := c.PostForm("category")
 	avatarURL := c.PostForm("avatar_url")
@@ -591,9 +607,21 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		Hash:         fileInfo.Metadata.Hash,
 	}
 
+	// 使用事务创建作品
 	artwork, err := h.service.CreateArtwork(artworkReq)
 	if err != nil {
 		log.Error().Err(err).Msg("创建作品失败")
+
+		// 清理已上传的文件
+		// 1. 删除本地存储
+		if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.LocalSpaceID, localFilePath); delErr != nil {
+			log.Error().Err(delErr).Str("path", localFilePath).Msg("清理本地文件失败")
+		}
+		// 2. 删除 CDN 文件
+		if _, delErr := h.fileService.DeleteFile(h.cfg.FileServer.AppID, h.cfg.FileServer.CDNSpaceID, cdnFilePath); delErr != nil {
+			log.Error().Err(delErr).Str("path", cdnFilePath).Msg("清理 CDN 文件失败")
+		}
+
 		response.InternalError("创建作品失败").
 			WithRequestID(c.GetString("request_id")).
 			GJSON(c)

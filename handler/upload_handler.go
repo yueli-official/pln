@@ -98,7 +98,6 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 		GJSON(c)
 }
 
-// Delete 删除文件
 // @Summary 删除文件
 // @Description 从三方服务删除文件
 // @Tags Upload
@@ -136,13 +135,4 @@ func (h *UploadHandler) Delete(c *gin.Context) {
 	response.OK().WithData(result).
 		WithRequestID(c.GetString("request_id")).
 		GJSON(c)
-}
-
-// RegisterRoutes 注册路由
-func (h *UploadHandler) RegisterRoutes(api *gin.RouterGroup) {
-	files := api.Group("/files")
-	{
-		files.POST("", h.UploadFile)
-		files.DELETE("", h.Delete)
-	}
 }

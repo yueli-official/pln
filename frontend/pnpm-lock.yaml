@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.16
         version: 1.0.16(rolldown-vite@7.2.10(@types/node@24.10.1)(jiti@2.6.1))(vue@3.5.25(typescript@5.9.3))
       '@yuelioi/yami':
-        specifier: ^1.0.29
-        version: 1.0.29
+        specifier: ^1.0.30
+        version: 1.0.30
       axios:
         specifier: ^1.13.2
         version: 1.13.2
@@ -912,8 +912,8 @@ packages:
     peerDependencies:
       vue: ^3.3.0
 
-  '@yuelioi/yami@1.0.29':
-    resolution: {integrity: sha512-BwnuFxk9OFYNxhiYdFp/eFVCnpB5w8H6eL7CjtscdrngnscIP0othkKW3RzcpxY3xCkRWBTHWxjUFnYfeoCwwg==, tarball: https://npm.pkg.github.com/download/@yuelioi/yami/1.0.29/e0044995c022949bec512e1237bdc209767d6b05}
+  '@yuelioi/yami@1.0.30':
+    resolution: {integrity: sha512-HwvyqNqdyzSfOdxVJrrQT/yr+KsW2H6oDHCgx7sp7R5Q/SyR29/1teM4/oJwKcVJ2v4sja7CHKM3qzrfjpYC4w==, tarball: https://npm.pkg.github.com/download/@yuelioi/yami/1.0.30/072053552d5b243b0cdfa5a4562ab8ef43b210bf}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2963,7 +2963,7 @@ snapshots:
     transitivePeerDependencies:
       - vite
 
-  '@yuelioi/yami@1.0.29': {}
+  '@yuelioi/yami@1.0.30': {}
 
   acorn-jsx@5.3.2(acorn@8.15.0):
     dependencies:

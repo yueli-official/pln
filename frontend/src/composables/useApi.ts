@@ -70,7 +70,7 @@ export function useApi() {
         page_size: pageSize,
         ...filters,
       }
-      const response = await instance.get<ApiResponse<PageData<ArtworkResponse[]>>>('/artworks', {
+      const response = await instance.get<ApiResponse<PageData<ArtworkResponse>>>('/artworks', {
         params,
       })
       return response.data
@@ -111,26 +111,6 @@ export function useApi() {
     error.value = null
     try {
       const response = await instance.get<ApiResponse<ArtworkResponse>>(`/artworks/${id}`)
-      return response.data
-    } catch (err) {
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  /**
-   * 按分类获取作品
-   */
-  const getArtworksByCategory = async (category: string, page = 1, pageSize = 20) => {
-    loading.value = true
-    error.value = null
-    try {
-      const params = { page, page_size: pageSize }
-      const response = await instance.get<ApiResponse<ArtworkResponse[]>>(
-        `/artworks/category/${category}`,
-        { params },
-      )
       return response.data
     } catch (err) {
       throw err
@@ -328,11 +308,6 @@ export function useApi() {
   const uploadAndCreateArtwork = async (
     file: File,
     artworkData: {
-      title: string
-      artist: string
-      description?: string
-      category?: string
-      avatar_url?: string
       tags?: string[]
     },
     onProgress?: (progress: number) => void,
@@ -342,18 +317,7 @@ export function useApi() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('title', artworkData.title)
-      formData.append('artist', artworkData.artist)
 
-      if (artworkData.description) {
-        formData.append('description', artworkData.description)
-      }
-      if (artworkData.category) {
-        formData.append('category', artworkData.category)
-      }
-      if (artworkData.avatar_url) {
-        formData.append('avatar_url', artworkData.avatar_url)
-      }
       if (artworkData.tags?.length) {
         artworkData.tags.forEach((tag) => {
           formData.append('tags[]', tag)
@@ -388,7 +352,6 @@ export function useApi() {
     getArtworks,
     getRandomArtworks,
     getArtwork,
-    getArtworksByCategory,
     createArtwork,
     updateArtwork,
     deleteArtwork,

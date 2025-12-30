@@ -1,106 +1,107 @@
 <template>
-  <div class="bg-background text-foreground py-8 px-4">
+  <div class="bg-background text-foreground py-12 px-4">
     <div class="max-w-7xl mx-auto">
       <!-- 页面标题 -->
-      <div class="mb-8">
+      <div class="mb-10">
         <h1 class="text-4xl font-bold mb-2">我的收藏</h1>
         <p class="text-muted-foreground">共 {{ bookmarkedArtworks.length }} 个收藏</p>
       </div>
 
       <!-- 加载中 -->
       <div v-if="loading" class="flex justify-center items-center py-20">
-        <div class="loading loading-spinner loading-lg text-primary"></div>
+        <div class="relative w-16 h-16">
+          <div class="absolute inset-0 rounded-full border-4 border-border"></div>
+          <div
+            class="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"
+          ></div>
+        </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="bookmarkedArtworks.length === 0" class="text-center py-20">
-        <div class="mb-4">
-          <span class="icon-[lucide--heart] text-6xl text-muted-foreground opacity-50"></span>
-        </div>
-        <p class="text-muted-foreground text-lg mb-4">暂无收藏作品</p>
-        <RouterLink to="/" class="btn btn-primary"> 去浏览作品 </RouterLink>
+      <div
+        v-else-if="bookmarkedArtworks.length === 0"
+        class="flex flex-col items-center justify-center py-20"
+      >
+        <span class="icon-[lucide--heart] text-6xl text-muted-foreground/50 mb-4"></span>
+        <p class="text-muted-foreground text-lg mb-6">暂无收藏作品</p>
+        <RouterLink
+          to="/"
+          class="px-6 py-2 rounded-full bg-primary text-white hover:shadow-lg transition-all"
+        >
+          去浏览作品
+        </RouterLink>
       </div>
 
-      <!-- 收藏列表 -->
-      <div v-else class="grid gap-4 mb-8">
+      <!-- 收藏网格 -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-12">
         <div
           v-for="artwork in paginatedArtworks"
           :key="artwork.id"
-          class="group relative overflow-hidden rounded-lg bg-card shadow-sm hover:shadow-md transition-all duration-300"
+          class="group flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all duration-300"
         >
-          <div class="flex gap-4 p-4">
-            <!-- 图片 -->
+          <!-- 图片部分 -->
+          <div
+            class="w-full aspect-square overflow-hidden bg-muted cursor-pointer relative"
+            @click="navigateToDetail(artwork.id)"
+          >
+            <img
+              :src="artwork.thumbnail_url"
+              :alt="'普拉娜'"
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            />
+            <!-- 悬停覆盖层 -->
             <div
-              class="w-32 h-32 shrink-0 overflow-hidden rounded-lg bg-muted cursor-pointer"
-              @click="navigateToDetail(artwork.id)"
+              class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
             >
-              <img
-                :src="artwork.thumbnail_url"
-                :alt="artwork.title"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              />
+              <span class="icon-[lucide--eye] text-4xl text-white"></span>
+            </div>
+          </div>
+
+          <!-- 信息部分 -->
+          <div class="flex-1 flex flex-col p-4">
+            <!-- 标签 -->
+            <div class="flex flex-wrap gap-2 mb-3">
+              <span
+                v-for="tag in artwork.tags.slice(0, 2)"
+                :key="tag"
+                class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
+              >
+                #{{ tag }}
+              </span>
             </div>
 
-            <!-- 信息 -->
-            <div class="flex-1 flex flex-col justify-between min-w-0 relative">
-              <div>
-                <h3
-                  class="font-semibold text-lg group-hover:text-primary transition-colors cursor-pointer"
-                  @click="navigateToDetail(artwork.id)"
-                >
-                  {{ artwork.title }}
-                </h3>
-                <p class="text-sm text-muted-foreground mt-1">{{ artwork.artist }}</p>
+            <!-- 统计信息 -->
+            <div
+              class="flex items-center gap-4 text-sm text-muted-foreground mb-3 py-2 border-y border-border/30"
+            >
+              <span class="flex items-center gap-1">
+                <span class="icon-[lucide--eye]"></span>
+                {{ artwork.views }}
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="icon-[lucide--heart] text-red-500"></span>
+                {{ artwork.likes }}
+              </span>
+            </div>
 
-                <!-- 标签 -->
-                <div class="flex flex-wrap gap-2 mt-3">
-                  <span
-                    v-for="tag in artwork.tags.slice(0, 3)"
-                    :key="tag"
-                    class="text-xs bg-muted text-muted-foreground px-2 py-1 rounded"
-                  >
-                    #{{ tag }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 统计和收藏日期 -->
-              <div class="flex items-center justify-between mt-3 pt-3 border-t border-base-300">
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span class="flex items-center gap-1">
-                    <span class="icon-[lucide--eye] text-sm"></span>
-                    {{ artwork.views }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <span class="icon-[lucide--heart] text-sm"></span>
-                    {{ artwork.likes }}
-                  </span>
-                </div>
-
-                <div class="text-sm text-muted-foreground">
-                  收藏于 {{ formatDate(getBookmarkTime(artwork.id)) }}
-                </div>
-              </div>
+            <!-- 收藏日期 -->
+            <div class="text-xs text-muted-foreground mb-4">
+              💾 {{ formatDate(getBookmarkTime(artwork.id)) }}
             </div>
 
             <!-- 操作按钮 -->
-            <div
-              class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
+            <div class="flex gap-2 mt-auto">
               <button
                 @click="navigateToDetail(artwork.id)"
-                class="btn btn-sm btn-primary"
-                title="查看详情"
+                class="flex-1 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
               >
-                <span class="icon-[lucide--eye]"></span>
+                <span class="icon-[lucide--eye] mr-1"></span>查看
               </button>
               <button
                 @click="handleRemoveBookmark(artwork.id)"
-                title="取消收藏"
-                class="btn btn-sm btn-destructive"
-                :disabled="artworkStore.loading"
+                class="flex-1 px-3 py-2 rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors text-sm font-medium"
               >
-                <span class="icon-[lucide--heart-crack]"></span>
+                <span class="icon-[lucide--heart-crack] mr-1"></span>取消
               </button>
             </div>
           </div>
@@ -119,9 +120,14 @@
       <!-- 底部操作 -->
       <div
         v-if="bookmarkedArtworks.length > 0"
-        class="pt-8 border-t border-base-300 flex justify-center"
+        class="pt-8 border-t border-border/30 flex justify-center"
       >
-        <button @click="clearAllBookmarks" class="btn btn-ghost text-error">清空所有收藏</button>
+        <button
+          @click="clearAllBookmarks"
+          class="px-6 py-2 rounded-full bg-error/10 text-error hover:bg-error/20 transition-colors"
+        >
+          清空所有收藏
+        </button>
       </div>
     </div>
   </div>
@@ -137,30 +143,26 @@ import type { Artwork } from '@/types'
 const router = useRouter()
 const artworkStore = useArtworkStore()
 
-const loading = ref(false)
+const loading = ref<boolean>(false)
 const bookmarkedArtworksList = ref<Artwork[]>([])
-const currentPage = ref(1)
-const pageSize = 20
+const currentPage = ref<number>(1)
+const pageSize: number = 20
 
-// 获取已收藏的作品
-const bookmarkedArtworks = computed(() => {
+const bookmarkedArtworks = computed<Artwork[]>(() => {
   return bookmarkedArtworksList.value.filter((artwork) => artworkStore.isBookmarked(artwork.id))
 })
 
-// 分页后的作品
-const paginatedArtworks = computed(() => {
+const paginatedArtworks = computed<Artwork[]>(() => {
   const start = (currentPage.value - 1) * pageSize
   const end = start + pageSize
   return bookmarkedArtworks.value.slice(start, end)
 })
 
-// 获取收藏时间
 const getBookmarkTime = (artworkId: number): number => {
   const status = artworkStore.getBookmarkStatus(artworkId)
   return status.timestamp || Date.now()
 }
 
-// 格式化日期
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp)
   const now = new Date()
@@ -188,13 +190,11 @@ const formatDate = (timestamp: number): string => {
   })
 }
 
-// 导航到详情页
-const navigateToDetail = (id: number) => {
+const navigateToDetail = (id: number): void => {
   router.push(`/artwork/${id}`)
 }
 
-// 移除单个收藏
-const handleRemoveBookmark = async (id: number) => {
+const handleRemoveBookmark = async (id: number): Promise<void> => {
   try {
     await artworkStore.toggleBookmark(id)
   } catch (err) {
@@ -202,8 +202,7 @@ const handleRemoveBookmark = async (id: number) => {
   }
 }
 
-// 清空所有收藏
-const clearAllBookmarks = async () => {
+const clearAllBookmarks = async (): Promise<void> => {
   if (!confirm('确定要清空所有收藏吗？')) return
   try {
     artworkStore.clearAllBookmarkRecords()
@@ -213,7 +212,6 @@ const clearAllBookmarks = async () => {
   }
 }
 
-// 获取收藏的作品ID列表
 const getBookmarkedArtworkIds = (): number[] => {
   const bookmarkRecords = localStorage.getItem('artwork:bookmarks')
   if (!bookmarkRecords) return []
@@ -229,8 +227,7 @@ const getBookmarkedArtworkIds = (): number[] => {
   }
 }
 
-// 初始化加载
-const initLoad = async () => {
+const initLoad = async (): Promise<void> => {
   loading.value = true
   try {
     const bookmarkedIds = getBookmarkedArtworkIds()

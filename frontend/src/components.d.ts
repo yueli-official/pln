@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ArtworkCard: typeof import('./components/ArtworkCard.vue')['default']
     HeaderArea: typeof import('./components/HeaderArea.vue')['default']
     HomeArea: typeof import('./pages/HomeView.vue')['default']
     HomePage: typeof import('./pages/HomeView.vue')['default']

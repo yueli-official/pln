@@ -5,11 +5,10 @@
       <div class="mb-8">
         <h1 class="text-3xl font-bold mb-2">上传作品</h1>
         <p class="text-muted-foreground text-sm">支持批量上传多个作品</p>
-        <p class="text-muted-foreground text-sm">最大5M, 超过5M会被压缩</p>
       </div>
 
       <!-- 错误提示 -->
-      <div v-if="error" class="alert alert-error mb-6">
+      <div v-if="error" class="alert alert-error mb-6 items-center">
         <div>
           <span>{{ error }}</span>
         </div>
@@ -115,54 +114,6 @@
           <h4 class="text-lg font-semibold mb-4">作品信息</h4>
 
           <div class="space-y-4">
-            <!-- 标题 -->
-            <div>
-              <label class="label">
-                <span class="label-text">作品标题</span>
-              </label>
-              <input
-                v-model="formData.title"
-                type="text"
-                placeholder="默认: 普拉娜"
-                class="input input-bordered w-full"
-              />
-            </div>
-
-            <!-- 艺术家名称 -->
-            <div>
-              <label class="label">
-                <span class="label-text">艺术家名称</span>
-              </label>
-              <input
-                v-model="formData.artist"
-                type="text"
-                placeholder="默认: 未知艺术家"
-                class="input input-bordered w-full"
-              />
-            </div>
-
-            <!-- 描述 -->
-            <div>
-              <label class="label">
-                <span class="label-text">描述</span>
-              </label>
-              <textarea
-                v-model="formData.description"
-                placeholder="输入作品描述"
-                class="textarea textarea-bordered w-full h-24"
-              ></textarea>
-            </div>
-
-            <!-- 分类 -->
-            <div>
-              <label class="label">
-                <span class="label-text">分类</span>
-              </label>
-              <select v-model="formData.category" class="select select-bordered w-full">
-                <option value="普拉娜">普拉娜</option>
-              </select>
-            </div>
-
             <!-- 标签 -->
             <div>
               <label class="label">
@@ -188,19 +139,6 @@
                   </button>
                 </span>
               </div>
-            </div>
-
-            <!-- 头像 URL -->
-            <div>
-              <label class="label">
-                <span class="label-text">艺术家头像 URL</span>
-              </label>
-              <input
-                v-model="formData.avatar_url"
-                type="url"
-                placeholder="https://example.com/avatar.jpg"
-                class="input input-bordered w-full"
-              />
             </div>
           </div>
         </div>
@@ -247,11 +185,6 @@ const uploadStatus = ref<
 
 // 表单数据
 const formData = ref({
-  title: '普拉娜',
-  artist: '未知艺术家',
-  description: '',
-  category: '普拉娜',
-  avatar_url: '',
   tagsInput: '',
   tags: [] as string[],
 })
@@ -397,11 +330,6 @@ const uploadFiles = async () => {
       await uploadAndCreateArtwork(
         file,
         {
-          title: formData.value.title,
-          artist: formData.value.artist,
-          description: formData.value.description,
-          category: formData.value.category,
-          avatar_url: formData.value.avatar_url,
           tags: formData.value.tags,
         },
         (progress) => {
@@ -426,12 +354,14 @@ const uploadFiles = async () => {
       })
       uploadStatus.value = newStatus
       i-- // 因为移除了当前项，索引需要回退
-    } catch (err) {
-      error.value = `上传失败: ${(err as Error).message}`
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || (err as Error).message || '上传失败'
+      error.value = `上传失败: ${errorMsg}`
+
       // 记录该文件的错误状态，但继续处理下一个文件
       uploadStatus.value[i] = {
         type: 'error',
-        message: (err as Error).message,
+        message: errorMsg,
       }
     }
   }

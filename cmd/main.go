@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -12,14 +13,19 @@ import (
 	"pln/models"
 	"pln/repo"
 	"pln/service"
+	"pln/storage"
 
 	"github.com/gin-contrib/cors"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/Yuelioi/gkit/log/zerologx"
+	"github.com/Yuelioi/gkit/log/zerologx/adapter/gormzerolog"
 	"github.com/Yuelioi/gkit/web/gin/middleware/apikey"
 	"github.com/Yuelioi/gkit/web/gin/middleware/log/gzero"
 	"github.com/Yuelioi/gkit/web/gin/middleware/ratelimit"
+	"github.com/Yuelioi/gkit/web/gin/middleware/requestid"
+
 	"github.com/Yuelioi/gkit/web/gin/server"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
@@ -35,14 +41,27 @@ func main() {
 	// 初始化日志
 	logger := zerologx.Default()
 	log.Logger = logger
+	zerolog.DefaultContextLogger = &logger
 
 	// 加载配置
 	if err := conf.LoadConfig(configPath); err != nil {
 		log.Fatal().Err(err).Msg("配置加载失败")
 	}
 
+	dbPath := conf.GetDSN()
+
+	_, err := os.Stat(dbPath)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(dbPath), 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	// 初始化数据库
-	db, err := gorm.Open(sqlite.Open(conf.GetDSN()), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+		Logger: gormzerolog.New(),
+	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
@@ -58,15 +77,15 @@ func main() {
 	gin.DefaultWriter = io.Discard
 	gin.DefaultErrorWriter = io.Discard
 
-	// 初始化上传服务和处理器
-	uploadService := service.NewFileService(
-		conf.Config,
-	)
-	uploadHandler := handler.NewUploadHandler(uploadService, conf.Config)
-
 	// 初始化仓储、服务和处理器
 	artworkRepo := repo.NewArtworkRepo(db)
 	artworkService := service.NewArtworkService(artworkRepo)
+
+	uploader := storage.NewThirdPartyUploader(conf.Config.FileServer.BaseURL, conf.Config.FileServer.AppID, conf.Config.FileServer.SpaceID, conf.Config.FileServer.APIKey)
+
+	uploadService := service.NewFileService(
+		conf.Config, artworkRepo, uploader,
+	)
 	artworkHandler := handler.NewArtworkHandler(artworkService, uploadService, conf.Config)
 
 	// 自定义 CORS 配置
@@ -107,6 +126,8 @@ func main() {
 			gzero.GinRecovery(logger),
 			ratelimit.Default(),
 			cors.New(corsConfig),
+			requestid.RequestID(),
+			gzero.RequestIDMiddleware(),
 		},
 		EnableCORS: false,
 		SPAPath:    "./frontend/dist",
@@ -126,7 +147,6 @@ func main() {
 			public.GET("/artworks", artworkHandler.ListArtworks)
 			public.GET("/artworks/random", artworkHandler.RandomArtworks)
 			public.GET("/artworks/:id", artworkHandler.GetArtwork)
-			public.GET("/artworks/category/:category", artworkHandler.GetArtworksByCategory)
 
 			public.POST("/artworks/:id/like", artworkHandler.IncrementLikes)
 			public.POST("/artworks/:id/unlike", artworkHandler.DecrementLikes)
@@ -135,14 +155,11 @@ func main() {
 
 			public.POST("/artworks/upload", artworkHandler.UploadAndCreateArtwork)
 
-			public.POST("/upload", uploadHandler.UploadFile)
-
 		}
 
 		// 需要认证的路由
 		auth := api.Group("/", apikey.NewBuilder().WithScheme("X-API-Key").WithValidator(conf.IsValidAPIKey).Handler())
 		{
-			auth.POST("/artworks", artworkHandler.CreateArtwork)
 			auth.PUT("/artworks/:id", artworkHandler.UpdateArtwork)
 			auth.DELETE("/artworks/:id", artworkHandler.DeleteArtwork)
 		}

@@ -1,25 +1,26 @@
 <template>
   <div class="bg-background text-foreground py-12 px-4">
     <div class="max-w-7xl mx-auto">
-      <!-- 页面标题和刷新按钮 -->
-      <div class="flex items-center justify-between mb-10">
-        <div>
-          <h1 class="text-4xl font-bold mb-2">随机发现</h1>
-          <p class="text-muted-foreground">随机普拉娜</p>
-        </div>
-        <button
-          @click="refreshArtworks"
-          :disabled="artworkStore.loading"
-          class="px-6 py-3 rounded-full bg-linear-to-r from-primary to-primary/80 text-white font-medium hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex items-center gap-2"
-        >
-          <span class="icon-[lucide--shuffle] text-lg"></span>
-          {{ artworkStore.loading ? '加载中' : '换一批' }}
-        </button>
+      <!-- 页面标题 -->
+      <div class="mb-10">
+        <h1 class="text-4xl font-bold mb-2">浏览作品</h1>
+        <p class="text-muted-foreground">共 {{ artworkStore.total }} 个作品</p>
       </div>
 
       <!-- 错误提示 -->
-      <div v-if="artworkStore.error" class="alert alert-error mb-6 rounded-lg">
-        {{ artworkStore.error.message }}
+      <div
+        v-if="artworkStore.error"
+        class="alert alert-error mb-6 rounded-lg border border-error/20"
+      >
+        <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4v2m0 0a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <span>{{ artworkStore.error.message }}</span>
       </div>
 
       <!-- 加载中 -->
@@ -45,7 +46,7 @@
           :key="artwork.id"
           :artwork="artwork"
           @navigate="navigateToDetail"
-          @bookmark="handleBookmark"
+          @like="handleLike"
         />
       </div>
 
@@ -55,12 +56,17 @@
         class="flex flex-col items-center justify-center py-20"
       >
         <span class="icon-[lucide--inbox] text-6xl text-muted-foreground/50 mb-4"></span>
-        <p class="text-muted-foreground text-lg mb-4">暂无作品</p>
+        <p class="text-muted-foreground text-lg">暂无作品</p>
+      </div>
+
+      <!-- 加载更多 -->
+      <div v-if="artworkStore.hasMoreArtworks" class="flex justify-center">
         <button
-          @click="refreshArtworks"
-          class="px-6 py-2 rounded-full bg-primary text-white hover:shadow-lg transition-all"
+          @click="loadMore"
+          :disabled="artworkStore.loading"
+          class="px-8 py-3 rounded-full border border-primary/50 bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-all duration-300 disabled:opacity-50"
         >
-          重新加载
+          {{ artworkStore.loading ? '加载中...' : '加载更多作品' }}
         </button>
       </div>
     </div>
@@ -76,34 +82,31 @@ import { toast } from '@yuelioi/toast'
 const router = useRouter()
 const artworkStore = useArtworkStore()
 
-const refreshArtworks = async (): Promise<void> => {
-  try {
-    await artworkStore.fetchRandomArtworks(24)
-  } catch (err) {
-    console.error('加载随机作品失败:', err)
-    toast.error('加载失败')
-  }
+const loadArtworks = async (): Promise<void> => {
+  await artworkStore.fetchArtworks(1, artworkStore.pageSize)
+}
+
+const loadMore = async (): Promise<void> => {
+  await artworkStore.loadMoreArtworks()
 }
 
 const navigateToDetail = (id: number): void => {
   router.push(`/artwork/${id}`)
 }
 
-const handleBookmark = async (id: number): Promise<void> => {
+const handleLike = async (id: number): Promise<void> => {
   try {
-    await artworkStore.toggleBookmark(id)
-    if (artworkStore.isBookmarked(id)) {
-      toast.success('已收藏')
+    await artworkStore.toggleLike(id)
+    if (artworkStore.isLiked(id)) {
+      toast.success('已点赞')
     } else {
-      toast.info('已取消收藏')
+      toast.info('已取消点赞')
     }
   } catch (err) {
-    console.error('收藏失败:', err)
+    console.error('点赞失败:', err)
     toast.error('操作失败')
   }
 }
 
-refreshArtworks()
+loadArtworks()
 </script>
-
-<style scoped></style>

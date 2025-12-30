@@ -9,11 +9,11 @@ import (
 type ArtworkRepo interface {
 	Create(artwork *models.Artwork) error
 	GetByID(id uint) (*models.Artwork, error)
-	GetAll(offset, limit int, filters map[string]interface{}) ([]models.Artwork, int64, error)
-	GetRandom(limit int, filters map[string]interface{}) ([]models.Artwork, error)
+	GetByHash(hash string, artwork *models.Artwork) error
+	GetAll(offset, limit int, filters map[string]any) ([]models.Artwork, int64, error)
+	GetRandom(limit int, filters map[string]any) ([]models.Artwork, error)
 	Update(id uint, artwork *models.Artwork) error
 	Delete(id uint) error
-	GetByCategory(category string, offset, limit int) ([]models.Artwork, int64, error)
 	IncrementViews(id uint) error
 	IncrementLikes(id uint) error
 	DecrementLikes(id uint) error
@@ -35,27 +35,22 @@ func (r *artworkRepo) Create(artwork *models.Artwork) error {
 
 func (r *artworkRepo) GetByID(id uint) (*models.Artwork, error) {
 	var artwork models.Artwork
-	err := r.db.Where("id = ? AND is_published = ?", id, true).First(&artwork).Error
+	err := r.db.Where("id = ?", id).First(&artwork).Error
 	if err != nil {
 		return nil, err
 	}
 	return &artwork, nil
 }
 
-func (r *artworkRepo) GetAll(offset, limit int, filters map[string]interface{}) ([]models.Artwork, int64, error) {
+func (r *artworkRepo) GetByHash(hash string, artwork *models.Artwork) error {
+	return r.db.Where("hash = ?", hash).First(artwork).Error
+}
+
+func (r *artworkRepo) GetAll(offset, limit int, filters map[string]any) ([]models.Artwork, int64, error) {
 	var artworks []models.Artwork
 	var total int64
 
-	query := r.db.Where("is_published = ?", true)
-
-	// 应用过滤条件
-	if category, ok := filters["category"]; ok && category != "" {
-		query = query.Where("category = ?", category)
-	}
-
-	if artist, ok := filters["artist"]; ok && artist != "" {
-		query = query.Where("artist ILIKE ?", "%"+artist.(string)+"%")
-	}
+	query := r.db.Model(&models.Artwork{})
 
 	if tags, ok := filters["tags"]; ok {
 		query = query.Where("tags LIKE ?", "%"+tags.(string)+"%")
@@ -74,19 +69,10 @@ func (r *artworkRepo) GetAll(offset, limit int, filters map[string]interface{}) 
 	return artworks, total, nil
 }
 
-func (r *artworkRepo) GetRandom(limit int, filters map[string]interface{}) ([]models.Artwork, error) {
+func (r *artworkRepo) GetRandom(limit int, filters map[string]any) ([]models.Artwork, error) {
 	var artworks []models.Artwork
 
-	query := r.db.Where("is_published = ?", true)
-
-	// 应用过滤条件
-	if category, ok := filters["category"]; ok && category != "" {
-		query = query.Where("category = ?", category)
-	}
-
-	if artist, ok := filters["artist"]; ok && artist != "" {
-		query = query.Where("artist ILIKE ?", "%"+artist.(string)+"%")
-	}
+	query := r.db.Model(&models.Artwork{})
 
 	if tags, ok := filters["tags"]; ok {
 		query = query.Where("tags LIKE ?", "%"+tags.(string)+"%")
@@ -106,23 +92,6 @@ func (r *artworkRepo) Update(id uint, artwork *models.Artwork) error {
 
 func (r *artworkRepo) Delete(id uint) error {
 	return r.db.Delete(&models.Artwork{}, id).Error
-}
-
-func (r *artworkRepo) GetByCategory(category string, offset, limit int) ([]models.Artwork, int64, error) {
-	var artworks []models.Artwork
-	var total int64
-
-	query := r.db.Where("category = ? AND is_published = ?", category, true)
-
-	if err := query.Model(&models.Artwork{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&artworks).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return artworks, total, nil
 }
 
 func (r *artworkRepo) IncrementViews(id uint) error {

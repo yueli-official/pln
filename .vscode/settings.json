@@ -19,7 +19,8 @@
     "frontend/tsconfig.node.json": true,
     "frontend/node_modules": true,
     "go.sum": true,
-    "Taskfile.yml": true
+    "Taskfile.yml": true,
+    "docs": true
   },
   "hide-files.files": [
     "frontend/src/auto-imports.d.ts",
@@ -36,6 +37,7 @@
     "frontend/tsconfig.node.json",
     "frontend/node_modules",
     "go.sum",
-    "Taskfile.yml"
+    "Taskfile.yml",
+    "docs"
   ]
 }

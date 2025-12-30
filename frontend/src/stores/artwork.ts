@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { useApi } from '@/composables/useApi'
-import type { Artwork, ArtworkCreateRequest, ArtworkUpdateRequest, ArtworkResponse } from '@/types'
+import type { Artwork, ArtworkCreateRequest, ArtworkUpdateRequest } from '@/types'
 
 interface StoredLike {
   artworkId: number
@@ -21,7 +21,6 @@ export const useArtworkStore = defineStore('artwork', () => {
   const {
     getArtworks,
     getArtwork,
-    getArtworksByCategory,
     createArtwork,
     updateArtwork,
     deleteArtwork,
@@ -60,9 +59,6 @@ export const useArtworkStore = defineStore('artwork', () => {
   // ==================== 计算属性 ====================
 
   const hasMoreArtworks = computed(() => artworks.value.length < total.value)
-
-  const defaultAvatarUrl =
-    'https://xingyeai-images-cdn.oss-cn-shanghai.aliyuncs.com/talkie-user-img/343073681977925/343078713926787.png'
 
   // ==================== 点赞相关方法 ====================
 
@@ -260,23 +256,6 @@ export const useArtworkStore = defineStore('artwork', () => {
     }
   }
 
-  /**
-   * 按分类获取作品
-   */
-  const fetchArtworksByCategory = async (category: string, page = 1, pageSize_ = 20) => {
-    try {
-      const result = await getArtworksByCategory(category, page, pageSize_)
-      artworks.value = result.data || []
-      currentPage.value = page
-      pageSize.value = pageSize_
-
-      return result
-    } catch (err) {
-      console.error('按分类获取作品失败:', err)
-      throw err
-    }
-  }
-
   // ==================== 作品创建/更新/删除 ====================
 
   /**
@@ -370,7 +349,6 @@ export const useArtworkStore = defineStore('artwork', () => {
 
     // 计算属性
     hasMoreArtworks,
-    defaultAvatarUrl,
 
     // 点赞
     isLiked,
@@ -390,7 +368,6 @@ export const useArtworkStore = defineStore('artwork', () => {
     fetchArtworks,
     loadMoreArtworks,
     fetchArtwork,
-    fetchArtworksByCategory,
     fetchRandomArtworks,
 
     // 作品操作

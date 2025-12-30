@@ -1,25 +1,33 @@
-// ==================== 类型定义 ====================
-
 // ==================== 文件服务相关 ====================
+
+export type FileType = 'image' | 'video' | 'document' | 'audio' | 'other'
 
 export interface FileMetadata {
   hash?: string
+
+  // 图片
   width?: number
   height?: number
   orientation?: string
   color_space?: string
+
+  // 视频
   duration?: number
   frame_rate?: number
   video_codec?: string
   resolution?: string
+
+  // 音频
   bit_rate?: number
   sample_rate?: number
+
+  // 通用
   mime_type?: string
   custom?: Record<string, any>
 }
 
 export interface ResourceVariant {
-  type: string // thumbnail, preview, compressed 等
+  type: string
   path: string
   access_url: string
   size?: number
@@ -28,100 +36,71 @@ export interface ResourceVariant {
 }
 
 export interface FileInfo {
+  // 基本信息
   name: string
   original_name: string
   size: number
+
+  // 路径
   path: string
-  folder_path: string
+
+  // 访问信息
   access_url: string
   storage_type: string
-  file_type: 'image' | 'video' | 'document' | 'audio' | 'other'
+
+  // 类型
+  file_type: FileType
+
+  // 扩展
   metadata?: FileMetadata
   extra: Record<string, any>
   variants?: ResourceVariant[]
+
+  // 时间
   upload_time: number
   modified_at: number
-  space?: string
+
+  // 标识符
+  file_id: string
+  id: string
 }
 
 export interface DeleteFileResponse {
   path: string
   deleted: boolean
 }
-
+// ==================== 作品相关 ====================
 // ==================== 作品相关 ====================
 
 export interface Artwork {
   id: number
-  title: string
-  description: string
-  artist: string
-  avatar_url: string
-  url: string // 图片URL
-  local_path: string
-  cdn_url: string
-  thumbnail_url: string // 缩略图URL
-  views: number
-  likes: number
-  bookmarks: number
-  tags: string[]
-  category: string
-  is_published: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface ArtworkCreateRequest {
-  title: string
-  description?: string
-  artist: string
-  avatar_url?: string
   url: string
-  local_path?: string
-  cdn_url?: string
-  thumbnail_url?: string
-  tags?: string[]
-  category?: string
-  is_published?: boolean
-}
-
-export interface ArtworkUpdateRequest {
-  title?: string
-  description?: string
-  artist?: string
-  avatar_url?: string
-  url?: string
-  local_path?: string
-  cdn_url?: string
-  thumbnail_url?: string
-  tags?: string[]
-  category?: string
-  is_published?: boolean
-  is_bookmarked?: boolean
-}
-
-export interface ArtworkResponse {
-  id: number
-  title: string
-  description: string
-  artist: string
-  avatar_url: string
-  url: string // 对外返回时使用 image 字段名
-  local_path: string
-  cdn_url: string
   thumbnail_url: string
   views: number
   likes: number
   bookmarks: number
   tags: string[]
-  category: string
-  is_published: boolean
-  is_bookmarked: boolean
   created_at: string
   updated_at: string
 }
 
-// ==================== API 响应 ====================
+export interface ArtworkCreateRequest {
+  file_id: string
+  url?: string
+  hash?: string
+  thumbnail_url?: string
+  tags?: string[]
+}
+
+export interface ArtworkUpdateRequest {
+  url?: string
+  thumbnail_url?: string
+  tags?: string[]
+}
+
+export type ArtworkResponse = Artwork
+
+// ==================== API 通用 ====================
 
 export interface ApiResponse<T> {
   code?: number
@@ -142,10 +121,10 @@ export interface UploadResponse {
   artwork?: ArtworkResponse
 }
 
-// ==================== 分页相关 ====================
+// ==================== 分页 ====================
 
 export interface PageData<T> {
-  list: T
+  list: T[]
   total: number
   page: number
   pageSize: number
@@ -154,7 +133,7 @@ export interface PageData<T> {
 export interface PaginationParams {
   page?: number
   page_size?: number
-  sort?: string // 排序字段，如 "-created_at" 表示按创建时间倒序
+  sort?: string
 }
 
 export interface PaginationMeta {

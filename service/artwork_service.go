@@ -11,12 +11,12 @@ import (
 type ArtworkService interface {
 	CreateArtwork(req *models.ArtworkCreateRequest) (*models.ArtworkResponse, error)
 	GetArtwork(id uint) (*models.ArtworkResponse, error)
-	GetArtworks(page, pageSize int, filters map[string]interface{}) ([]models.ArtworkResponse, int64, error)
-	GetRandomArtworks(limit int, filters map[string]interface{}) ([]models.ArtworkResponse, error)
+	GetByHash(hash string) (*models.Artwork, error)
+	GetArtworks(page, pageSize int, filters map[string]any) ([]models.ArtworkResponse, int64, error)
+	GetRandomArtworks(limit int, filters map[string]any) ([]models.ArtworkResponse, error)
 
 	UpdateArtwork(id uint, req *models.ArtworkUpdateRequest) (*models.ArtworkResponse, error)
 	DeleteArtwork(id uint) error
-	GetArtworksByCategory(category string, page, pageSize int) ([]models.ArtworkResponse, int64, error)
 
 	IncrementViews(id uint) error
 	IncrementLikes(id uint) error
@@ -35,18 +35,13 @@ func NewArtworkService(repo repo.ArtworkRepo) ArtworkService {
 
 func (s *artworkService) CreateArtwork(req *models.ArtworkCreateRequest) (*models.ArtworkResponse, error) {
 	artwork := &models.Artwork{
-		Title:        req.Title,
-		Description:  req.Description,
-		Artist:       req.Artist,
-		AvatarURL:    req.AvatarURL,
 		URL:          req.URL,
-		LocalPath:    req.LocalPath,
-		CDNPath:      req.CDNPath,
-		CDNURL:       req.CDNURL,
-		Category:     req.Category,
-		IsPublished:  req.IsPublished,
 		ThumbnailURL: req.ThumbnailURL,
 		Hash:         req.Hash,
+		FileID:       req.FileID,
+		Views:        0,
+		Likes:        0,
+		Bookmarks:    0,
 	}
 
 	// 设置 tags，如果为空则设置为空数组
@@ -82,7 +77,15 @@ func (s *artworkService) GetArtwork(id uint) (*models.ArtworkResponse, error) {
 	return &resp, nil
 }
 
-func (s *artworkService) GetArtworks(page, pageSize int, filters map[string]interface{}) ([]models.ArtworkResponse, int64, error) {
+func (s *artworkService) GetByHash(hash string) (*models.Artwork, error) {
+	var artwork models.Artwork
+	if err := s.repo.GetByHash(hash, &artwork); err != nil {
+		return nil, err
+	}
+	return &artwork, nil
+}
+
+func (s *artworkService) GetArtworks(page, pageSize int, filters map[string]any) ([]models.ArtworkResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -105,7 +108,7 @@ func (s *artworkService) GetArtworks(page, pageSize int, filters map[string]inte
 	return responses, total, nil
 }
 
-func (s *artworkService) GetRandomArtworks(limit int, filters map[string]interface{}) ([]models.ArtworkResponse, error) {
+func (s *artworkService) GetRandomArtworks(limit int, filters map[string]any) ([]models.ArtworkResponse, error) {
 	if limit < 1 {
 		limit = 10
 	}
@@ -129,35 +132,11 @@ func (s *artworkService) GetRandomArtworks(limit int, filters map[string]interfa
 func (s *artworkService) UpdateArtwork(id uint, req *models.ArtworkUpdateRequest) (*models.ArtworkResponse, error) {
 	artwork := &models.Artwork{}
 
-	if req.Title != "" {
-		artwork.Title = req.Title
-	}
-	if req.Description != "" {
-		artwork.Description = req.Description
-	}
-	if req.Artist != "" {
-		artwork.Artist = req.Artist
-	}
-	if req.AvatarURL != "" {
-		artwork.AvatarURL = req.AvatarURL
-	}
 	if req.URL != "" {
 		artwork.URL = req.URL
 	}
-	if req.LocalPath != "" {
-		artwork.LocalPath = req.LocalPath
-	}
-	if req.CDNURL != "" {
-		artwork.CDNURL = req.CDNURL
-	}
 	if len(req.Tags) > 0 {
 		artwork.SetTags(req.Tags)
-	}
-	if req.Category != "" {
-		artwork.Category = req.Category
-	}
-	if req.IsPublished != nil {
-		artwork.IsPublished = *req.IsPublished
 	}
 
 	if err := s.repo.Update(id, artwork); err != nil {
@@ -176,29 +155,6 @@ func (s *artworkService) UpdateArtwork(id uint, req *models.ArtworkUpdateRequest
 
 func (s *artworkService) DeleteArtwork(id uint) error {
 	return s.repo.Delete(id)
-}
-
-func (s *artworkService) GetArtworksByCategory(category string, page, pageSize int) ([]models.ArtworkResponse, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	offset := (page - 1) * pageSize
-
-	artworks, total, err := s.repo.GetByCategory(category, offset, pageSize)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var responses []models.ArtworkResponse
-	for _, artwork := range artworks {
-		responses = append(responses, artwork.ToResponse())
-	}
-
-	return responses, total, nil
 }
 
 func (s *artworkService) IncrementViews(id uint) error {

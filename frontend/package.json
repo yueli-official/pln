@@ -23,7 +23,7 @@
     "@vueuse/core": "^14.1.0",
     "@yuelioi/toast": "1.0.19",
     "@yuelioi/ui": "^1.0.16",
-    "@yuelioi/yami": "^1.0.29",
+    "@yuelioi/yami": "^1.0.30",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "pinia": "^3.0.4",

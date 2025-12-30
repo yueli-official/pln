@@ -1,66 +1,19 @@
 definitions:
-  models.ArtworkCreateRequest:
-    properties:
-      artist:
-        type: string
-      avatar_url:
-        type: string
-      category:
-        type: string
-      cdn_url:
-        type: string
-      description:
-        type: string
-      hash:
-        type: string
-      is_published:
-        type: boolean
-      tags:
-        items:
-          type: string
-        type: array
-      thumbnail_url:
-        type: string
-      title:
-        type: string
-      url:
-        type: string
-    required:
-    - artist
-    - title
-    - url
-    type: object
   models.ArtworkResponse:
     properties:
-      artist:
-        type: string
-      avatar_url:
-        type: string
       bookmarks:
         type: integer
-      category:
-        type: string
-      cdn_url:
-        type: string
       created_at:
-        type: string
-      description:
         type: string
       id:
         type: integer
-      is_published:
-        type: boolean
       likes:
         type: integer
-      local_path:
-        type: string
       tags:
         items:
           type: string
         type: array
       thumbnail_url:
-        type: string
-      title:
         type: string
       updated_at:
         type: string
@@ -71,154 +24,13 @@ definitions:
     type: object
   models.ArtworkUpdateRequest:
     properties:
-      artist:
-        type: string
-      avatar_url:
-        type: string
-      category:
-        type: string
-      cdn_url:
-        type: string
-      description:
-        type: string
-      is_published:
-        type: boolean
-      local_path:
-        type: string
       tags:
         items:
           type: string
         type: array
       thumbnail_url:
         type: string
-      title:
-        type: string
       url:
-        type: string
-    type: object
-  models.DeleteFileResponse:
-    properties:
-      deleted:
-        description: 是否成功删除
-        type: boolean
-      path:
-        description: 被删除文件路径
-        type: string
-    type: object
-  models.FileInfo:
-    properties:
-      access_url:
-        description: 访问信息
-        type: string
-      extra:
-        additionalProperties: {}
-        type: object
-      file_type:
-        allOf:
-        - $ref: '#/definitions/models.FileType'
-        description: 文件属性
-      folder_path:
-        description: 父目录路径
-        type: string
-      metadata:
-        allOf:
-        - $ref: '#/definitions/models.FileMetadata'
-        description: 元数据（用于扩展不同文件类型的信息）
-      modified_at:
-        description: 修改时间
-        type: integer
-      name:
-        description: 基本信息
-        type: string
-      original_name:
-        description: 原始文件名
-        type: string
-      path:
-        description: 路径信息
-        type: string
-      size:
-        description: 文件大小（字节）
-        type: integer
-      space:
-        description: 空间信息
-        type: string
-      storage_type:
-        description: 存储类型（local/smms/aliyun等）
-        type: string
-      upload_time:
-        description: 时间信息
-        type: integer
-      variants:
-        description: 缩略图、预览等变体
-        items:
-          $ref: '#/definitions/models.ResourceVariant'
-        type: array
-    type: object
-  models.FileMetadata:
-    properties:
-      bit_rate:
-        description: 音频特定
-        type: integer
-      color_space:
-        type: string
-      custom:
-        additionalProperties: {}
-        type: object
-      duration:
-        description: 视频特定
-        type: integer
-      frame_rate:
-        type: number
-      hash:
-        type: string
-      height:
-        type: integer
-      mime_type:
-        description: 通用
-        type: string
-      orientation:
-        type: string
-      resolution:
-        type: string
-      sample_rate:
-        type: integer
-      video_codec:
-        type: string
-      width:
-        description: 图片特定
-        type: integer
-    type: object
-  models.FileType:
-    enum:
-    - image
-    - video
-    - document
-    - audio
-    - other
-    type: string
-    x-enum-varnames:
-    - FileTypeImage
-    - FileTypeVideo
-    - FileTypeDocument
-    - FileTypeAudio
-    - FileTypeOther
-  models.ResourceVariant:
-    properties:
-      access_url:
-        description: 访问URL
-        type: string
-      created_at:
-        type: string
-      extra:
-        additionalProperties: {}
-        type: object
-      path:
-        description: 逻辑路径
-        type: string
-      size:
-        type: integer
-      type:
-        description: thumbnail, preview, compressed 等
         type: string
     type: object
   response.Response:
@@ -255,14 +67,6 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: 分类
-        in: query
-        name: category
-        type: string
-      - description: 艺术家
-        in: query
-        name: artist
-        type: string
       produces:
       - application/json
       responses:
@@ -278,32 +82,6 @@ paths:
                   type: array
               type: object
       summary: 获取作品列表
-      tags:
-      - Artwork
-    post:
-      consumes:
-      - application/json
-      description: 创建新的艺术作品
-      parameters:
-      - description: 作品信息
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/models.ArtworkCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: 创建成功
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ArtworkResponse'
-              type: object
-      summary: 创建作品
       tags:
       - Artwork
   /artworks/{id}:
@@ -451,36 +229,6 @@ paths:
       summary: 取消点赞
       tags:
       - Artwork
-  /artworks/category/{category}:
-    get:
-      description: 获取指定分类的作品列表
-      parameters:
-      - description: 分类
-        in: path
-        name: category
-        required: true
-        type: string
-      - default: 1
-        description: 页码
-        in: query
-        name: page
-        type: integer
-      - default: 20
-        description: 每页数量
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 按分类获取作品
-      tags:
-      - Artwork
   /artworks/random:
     get:
       description: 随机获取指定数量的作品
@@ -490,14 +238,6 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: 分类
-        in: query
-        name: category
-        type: string
-      - description: 艺术家
-        in: query
-        name: artist
-        type: string
       produces:
       - application/json
       responses:
@@ -526,86 +266,19 @@ paths:
         name: file
         required: true
         type: file
-      - description: 作品标题
-        in: formData
-        name: title
-        required: true
-        type: string
-      - description: 艺术家名称
-        in: formData
-        name: artist
-        required: true
-        type: string
-      - description: 作品描述
-        in: formData
-        name: description
-        type: string
-      - description: 分类
-        in: formData
-        name: category
-        type: string
-      - description: 头像URL
-        in: formData
-        name: avatar_url
-        type: string
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ArtworkResponse'
+              type: object
       summary: 上传文件并创建作品
-      tags:
-      - Upload
-  /files:
-    delete:
-      description: 从三方服务删除文件
-      parameters:
-      - description: 文件路径
-        in: query
-        name: path
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 删除成功
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.DeleteFileResponse'
-              type: object
-      summary: 删除文件
-      tags:
-      - Upload
-    post:
-      consumes:
-      - multipart/form-data
-      description: 上传图片或文件到 CDN
-      parameters:
-      - description: 要上传的文件
-        in: formData
-        name: file
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 上传成功
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.FileInfo'
-              type: object
-      summary: 上传文件到 CDN
       tags:
       - Upload
 swagger: "2.0"

@@ -23,8 +23,7 @@ type FileInfo struct {
 	Size         int64  `json:"size"`          // 文件大小（字节）
 
 	// 路径信息
-	Path       string `json:"path"`        // 逻辑路径（用于生成访问URL）
-	FolderPath string `json:"folder_path"` // 父目录路径
+	Path string `json:"path"` // 逻辑路径（用于生成访问URL）
 
 	// 访问信息
 	AccessURL   string `json:"access_url"`   // 文件访问URL
@@ -42,13 +41,12 @@ type FileInfo struct {
 	UploadTime int64 `json:"upload_time"` // 上传时间
 	ModifiedAt int64 `json:"modified_at"` // 修改时间
 
-	// 空间信息
-	Space string `json:"space,omitempty"` // 所属空间
-
 	// ===== 内部字段（不对外返回） =====
 	StoragePath          string `json:"-"`
 	ThumbnailStoragePath string `json:"-"`
-	ID                   string `json:"-"`
+	// ===== 标识符 =====
+	FileID string `json:"file_id"` // 文件ID（来自第三方存储服务）
+	ID     string `json:"id"`      // 本地数据库ID
 }
 
 // FileMetadata 文件元数据

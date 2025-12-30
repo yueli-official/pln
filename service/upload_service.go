@@ -1,31 +1,34 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"pln/conf"
 	"pln/models"
+	"pln/repo"
+	"pln/storage"
 
 	"github.com/rs/zerolog/log"
 )
 
 type FileService struct {
-	cfg *conf.AppConfig
-	cli *http.Client
+	cfg      *conf.AppConfig
+	cli      *http.Client
+	repo     repo.ArtworkRepo
+	uploader storage.Uploader
 }
 
-func NewFileService(cfg *conf.AppConfig) *FileService {
+func NewFileService(cfg *conf.AppConfig, repo repo.ArtworkRepo, uploader storage.Uploader) *FileService {
 	return &FileService{
-		cfg: cfg,
-		cli: &http.Client{},
+		cfg:      cfg,
+		cli:      &http.Client{Timeout: 30 * time.Second},
+		repo:     repo,
+		uploader: uploader,
 	}
 }
 
@@ -44,244 +47,160 @@ type UploadOptions struct {
 }
 
 // ============ 上传文件 ============
-func (fs *FileService) UploadFile(file io.Reader, fileName string, spaceID string) (*models.FileInfo, error) {
-	url := fs.cfg.FileServer.BaseURL + "/api/v1/files"
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	// 添加表单字段
-	writer.WriteField("app_id", fs.cfg.FileServer.AppID)
-	writer.WriteField("space_id", spaceID)
-
-	log.Info().
-		Str("app_id", fs.cfg.FileServer.AppID).
-		Str("space_id", spaceID).
+// UploadLocalFile 上传文件到本地存储空间
+func (fs *FileService) UploadLocalFile(ctx context.Context, file io.Reader, fileName string) (*storage.UploadResponse, error) {
+	logger := log.Ctx(ctx).With().
+		Str("component", "FileService").
 		Str("file_name", fileName).
-		Msg("上传文件")
+		Str("space_type", "local").
+		Logger()
 
-	// 添加缩略图配置
-	options := UploadOptions{
-		Thumbnail: fs.cfg.ThumbnailConfig,
-	}
-	optionsJSON, _ := json.Marshal(options)
-	writer.WriteField("options", string(optionsJSON))
+	logger.Debug().Msg("开始上传到本地存储")
 
-	// 添加文件
-	part, err := writer.CreateFormFile("file", fileName)
+	options := buildThumbnailOptions(fs.cfg.ThumbnailConfig.Width, fs.cfg.ThumbnailConfig.Height, fs.cfg.ThumbnailConfig.Mode, fs.cfg.ThumbnailConfig.Quality)
+
+	resp, err := fs.uploader.Upload(context.Background(), file, fileName, options)
+
 	if err != nil {
-		log.Error().Err(err).Str("file_name", fileName).Msg("创建表单字段失败")
-		return nil, fmt.Errorf("添加文件失败: %w", err)
+		logger.Error().Err(err).Msg("上传到本地存储失败")
+		return nil, fmt.Errorf("上传到本地存储失败: %w", err)
 	}
 
-	if _, err := io.Copy(part, file); err != nil {
-		log.Error().Err(err).Str("file_name", fileName).Msg("复制文件内容失败")
-		return nil, fmt.Errorf("复制文件内容失败: %w", err)
+	logger.Debug().
+		Str("file_id", resp.FileID).
+		Str("status_url", resp.StatusURL).
+		Msg("本地文件上传成功")
+
+	return resp, nil
+}
+
+func buildThumbnailOptions(width, height int, mode string, quality int) map[string]any {
+	return map[string]any{
+		"thumbnail": map[string]any{
+			"enabled": true,
+			"width":   width,
+			"height":  height,
+			"mode":    mode,
+			"quality": quality,
+		},
 	}
-
-	writer.Close()
-
-	// 发送请求
-	req, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		log.Error().Err(err).Str("url", url).Msg("创建请求失败")
-		return nil, fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("X-App-ID", fs.cfg.FileServer.AppID)
-	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)
-
-	// 添加超时设置
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	req = req.WithContext(ctx)
-
-	resp, err := fs.cli.Do(req)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("url", url).
-			Str("file_name", fileName).
-			Str("space_id", spaceID).
-			Msg("上传请求失败")
-
-		if errors.Is(err, context.DeadlineExceeded) {
-			log.Error().Msg("上传超时")
-		}
-		return nil, fmt.Errorf("上传失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取完整响应体，避免 EOF 错误
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("file_name", fileName).
-			Msg("读取响应失败")
-		return nil, fmt.Errorf("read response failed: %w", err)
-	}
-
-	// 先检查状态码
-	if resp.StatusCode != http.StatusOK {
-		log.Error().
-			Int("status_code", resp.StatusCode).
-			Str("response", string(respData)).
-			Str("file_name", fileName).
-			Str("space_id", spaceID).
-			Msg("服务器返回错误")
-		return nil, fmt.Errorf("上传状态码错误 %d: %s", resp.StatusCode, string(respData))
-	}
-
-	//  解析 JSON 响应
-	var result ThirdPartyResponse
-	if err := json.Unmarshal(respData, &result); err != nil {
-		log.Error().
-			Err(err).
-			Str("response", string(respData)).
-			Str("file_name", fileName).
-			Msg("解析响应 JSON 失败")
-		return nil, fmt.Errorf("解析响应 JSON 失败: %w", err)
-	}
-
-	// 检查业务逻辑错误
-	if result.Code != 0 {
-		log.Error().
-			Int("code", result.Code).
-			Str("message", result.Message).
-			Str("file_name", fileName).
-			Str("space_id", spaceID).
-			Msg("服务器业务错误")
-		return nil, fmt.Errorf("上传失败: code=%d, message=%s", result.Code, result.Message)
-	}
-
-	// 检查返回数据是否为空
-	if result.Data == nil {
-		log.Error().
-			Str("file_name", fileName).
-			Str("space_id", spaceID).
-			Msg("服务器返回数据为空")
-		return nil, fmt.Errorf("服务器返回数据为空")
-	}
-
-	// 解析返回的 FileInfo
-	fileInfoData, _ := json.Marshal(result.Data)
-	var fileInfo models.FileInfo
-	if err := json.Unmarshal(fileInfoData, &fileInfo); err != nil {
-		log.Error().
-			Err(err).
-			Str("file_name", fileName).
-			Msg("解析文件信息失败")
-		return nil, fmt.Errorf("解析文件信息失败: %w", err)
-	}
-
-	// 构建完整的访问 URL
-	fileInfo.AccessURL = fs.cfg.FileServer.BaseURL + fileInfo.AccessURL
-
-	// 处理缩略图 URL
-	for i, v := range fileInfo.Variants {
-		if v.Type == "thumbnail" {
-			fileInfo.Variants[i].AccessURL = fs.cfg.FileServer.BaseURL + v.AccessURL
-		}
-	}
-
-	log.Info().
-		Str("file_name", fileName).
-		Str("space_id", spaceID).
-		Str("access_url", fileInfo.AccessURL).
-		Msg("文件上传成功")
-
-	return &fileInfo, nil
 }
 
 // ============ 删除文件 ============
 
-// 删除文件
-func (fs *FileService) DeleteFile(appID string, spaceID string, path string) (bool, error) {
-	url := fmt.Sprintf("%s?app_id=%s&space_id=%s&path=%s",
-		fs.cfg.FileServer.BaseURL+"/api/v1/files", appID, spaceID, path)
-
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return false, err
-	}
-
-	log.Info().
+// DeleteFile 删除文件（通过 artworkID 查询并删除相关文件）
+func (fs *FileService) DeleteFile(ctx context.Context, artworkID uint) (bool, error) {
+	logger := log.Ctx(ctx).With().
 		Str("app_id", fs.cfg.FileServer.AppID).
-		Str("space_id", spaceID).
-		Str("path", path).
-		Msg("删除文件")
+		Uint("artwork_id", artworkID).
+		Str("component", "FileService").
+		Logger()
 
-	req.Header.Set("X-App-ID", appID)
-	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)
+	logger.Info().Msg("开始删除文件")
 
-	resp, err := fs.cli.Do(req)
+	// Get artwork record
+	artwork, err := fs.repo.GetByID(artworkID)
 	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	var result ThirdPartyResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return false, err
+		logger.Error().Err(err).Msg("获取文件信息失败")
+		return false, fmt.Errorf("获取文件信息失败: %w", err)
 	}
 
-	if result.Code != 0 {
-		return false, fmt.Errorf("delete failed: %s", result.Message)
+	if artwork == nil {
+		logger.Warn().Msg("文件记录不存在")
+		return false, fmt.Errorf("文件记录不存在")
 	}
 
-	// 解析删除响应
-	deleteResp, _ := json.Marshal(result.Data)
-	var deleteResult models.DeleteFileResponse
-	if err := json.Unmarshal(deleteResp, &deleteResult); err != nil {
-		return false, err
+	// Delete from third-party storage
+	err = fs.uploader.Delete(ctx, artwork.FileID)
+	if err != nil {
+		if strings.Contains(err.Error(), "文件不存在") {
+			logger.Warn().Err(err).Msg("文件不存在")
+			// File doesn't exist on remote, but we still delete the DB record
+			if err := fs.repo.Delete(artworkID); err != nil {
+				logger.Error().Err(err).Msg("删除数据库记录失败")
+				return false, fmt.Errorf("删除数据库记录失败: %w", err)
+			}
+			return false, nil
+		}
+
+		logger.Error().Err(err).Msg("删除文件失败")
+		return false, fmt.Errorf("删除文件失败: %w", err)
 	}
 
-	return deleteResult.Deleted, nil
+	logger.Debug().Msg("远程文件删除成功")
+
+	return true, nil
+}
+
+// DeleteFileByFileID 按文件ID直接删除文件（不查询数据库）
+func (fs *FileService) DeleteFileByFileID(ctx context.Context, fileID string) (bool, error) {
+	logger := log.Ctx(ctx).With().
+		Str("file_id", fileID).
+		Str("component", "FileService").
+		Logger()
+
+	logger.Debug().Msg("开始删除文件")
+
+	if fileID == "" {
+		logger.Warn().Msg("文件ID不能为空")
+		return false, fmt.Errorf("文件ID不能为空")
+	}
+
+	// Delete from third-party storage using uploader
+	err := fs.uploader.Delete(ctx, fileID)
+	if err != nil {
+		// Check if error is because file doesn't exist
+		if strings.Contains(err.Error(), "文件不存在") {
+			logger.Warn().Msg("文件不存在")
+			return false, nil
+		}
+
+		logger.Error().Err(err).Msg("删除文件失败")
+		return false, fmt.Errorf("删除文件失败: %w", err)
+	}
+
+	logger.Debug().Msg("文件删除成功")
+	return true, nil
 }
 
 // ============ 获取文件信息 ============
 
 // GetFileInfo 获取文件信息
-func (fs *FileService) GetFileInfo(appID string, spaceID string, path string) (*models.FileInfo, error) {
-	url := fmt.Sprintf("%s/api/v1/files/info?app_id=%s&space_id=%s&path=%s",
-		fs.cfg.FileServer.BaseURL, appID, spaceID, path)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
+func (fs *FileService) GetFileInfo(fileID string) (*models.FileInfo, error) {
 
 	log.Info().
-		Str("app_id", fs.cfg.FileServer.AppID).
-		Str("space_id", spaceID).
-		Str("path", path).
+		Str("file_id", fileID).
 		Msg("获取文件信息")
 
-	req.Header.Set("X-App-ID", appID)
-	req.Header.Set("X-API-Key", fs.cfg.FileServer.APIKey)
+	return fs.uploader.GetFileInfo(fileID)
 
-	resp, err := fs.cli.Do(req)
+}
+
+//  查询上传进度
+func (fs *FileService) GetJobProgress(ctx context.Context, jobID string) (*storage.JobProgressResponse, error) {
+	logger := log.Ctx(ctx).With().
+		Str("job_id", jobID).
+		Str("component", "FileService").
+		Logger()
+
+	logger.Debug().Msg("开始查询上传进度")
+
+	if jobID == "" {
+		return nil, fmt.Errorf("任务ID不能为空")
+	}
+
+	progress, err := fs.uploader.GetJobProgress(ctx, jobID)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var result ThirdPartyResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		logger.Error().Err(err).Msg("查询上传进度失败")
+		return nil, fmt.Errorf("查询上传进度失败: %w", err)
 	}
 
-	if result.Code != 0 {
-		return nil, fmt.Errorf("get file info failed: %s", result.Message)
-	}
+	logger.Debug().
+		Int("total_tasks", progress.TotalTasks).
+		Int("completed_tasks", progress.CompletedTasks).
+		Str("status", progress.Status).
+		Msg("获取上传进度成功")
 
-	fileInfoData, _ := json.Marshal(result.Data)
-	var fileInfo models.FileInfo
-	if err := json.Unmarshal(fileInfoData, &fileInfo); err != nil {
-		return nil, err
-	}
-
-	return &fileInfo, nil
+	return progress, nil
 }

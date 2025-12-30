@@ -8,7 +8,7 @@
           to="/"
           class="text-xl md:text-2xl font-bold text-primary hover:opacity-80 transition-opacity"
         >
-          图片库
+          普拉娜
         </RouterLink>
 
         <!-- 桌面端导航 -->
@@ -27,6 +27,17 @@
             </RouterLink>
 
             <RouterLink
+              to="/browse"
+              class="px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full cursor-pointer"
+              :class="[
+                $route.path.startsWith('/browse')
+                  ? 'text-primary-foreground bg-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/60',
+              ]"
+            >
+              浏览
+            </RouterLink>
+            <RouterLink
               to="/random"
               class="px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full cursor-pointer"
               :class="[
@@ -38,10 +49,10 @@
               随机
             </RouterLink>
             <RouterLink
-              to="/favorites"
+              to="/bookmarks"
               class="px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full cursor-pointer"
               :class="[
-                $route.path.startsWith('/favorites')
+                $route.path.startsWith('/bookmarks')
                   ? 'text-primary-foreground bg-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/60',
               ]"
@@ -98,7 +109,21 @@
           首页
         </RouterLink>
         <RouterLink
-          to="/favorites"
+          to="/browse"
+          class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-accent transition-colors"
+          @click="closeMobileMenu"
+        >
+          浏览
+        </RouterLink>
+        <RouterLink
+          to="/random"
+          class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-accent transition-colors"
+          @click="closeMobileMenu"
+        >
+          随机
+        </RouterLink>
+        <RouterLink
+          to="/bookmarks"
           class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-accent transition-colors"
           @click="closeMobileMenu"
         >
@@ -116,7 +141,7 @@
         <span onclick="settingModal.close()" class="modal-close">关闭</span>
       </div>
 
-      <div class="modal-body flex gap-4 flex-col">
+      <div class="modal-body flex gap-4 flex-col py-2 px-1">
         <div class="label-float label-float-required">
           <input type="text" v-model="apiKeyInput" placeholder=" " id="apikey" /><label
             for="apikey"

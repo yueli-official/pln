@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
 	_ "image/gif"
+	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"path/filepath"
@@ -17,6 +19,7 @@ import (
 	"pln/service"
 
 	"github.com/Yuelioi/gkit/web/response"
+	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -84,7 +87,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 	}
 	defer src0.Close()
 
-	// 计算 Hash
+	// 计算 MD5 Hash
 	hash, err := h.calculateFileHash(src0)
 	if err != nil {
 		logger.Error().Err(err).Msg("计算文件 Hash 失败")
@@ -96,7 +99,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 
 	logger.Debug().Str("hash", hash).Msg("文件 Hash 计算完成")
 
-	// 检查 Hash 是否已存在（快速失败）
+	// 检查 MD5 Hash 是否已存在
 	existingArtwork, err := h.service.GetByHash(hash)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logger.Error().Err(err).Msg("查询 Hash 失败")
@@ -113,6 +116,41 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 			WithRequestID(requestID).
 			GJSON(c)
 		return
+	}
+
+	// ============ 步骤 0.5：计算 pHash（感知哈希，检测相似图片）============
+	src0_2, err := file.Open()
+	if err != nil {
+		logger.Error().Err(err).Msg("打开上传文件失败")
+		response.InternalError("上传失败").
+			WithRequestID(requestID).
+			GJSON(c)
+		return
+	}
+	defer src0_2.Close()
+
+	pHash, err := h.calculatePHash(src0_2)
+	if err != nil {
+		logger.Warn().Err(err).Msg("计算 pHash 失败，继续处理")
+		// pHash 失败不中断流程，只记录日志
+	} else {
+		logger.Debug().Int64("phash", pHash).Msg("pHash 计算完成")
+
+		// 查询相似的图片（使用汉明距离）
+		similarArtworks, err := h.service.GetByPHashSimilarity(pHash, 5) // 汉明距离阈值为 5
+		if err != nil {
+			logger.Warn().Err(err).Msg("查询相似图片失败")
+		} else if len(similarArtworks) > 0 {
+			logger.Info().
+				Int64("phash", pHash).
+				Int("similar_count", len(similarArtworks)).
+				Uint("similar_artwork_id", similarArtworks[0].ID).
+				Msg("发现相似图片")
+			response.Conflict("图片过于相似，已存在").
+				WithRequestID(requestID).
+				GJSON(c)
+			return
+		}
 	}
 
 	// ============ 步骤 1：上传本地存储（异步）============
@@ -141,6 +179,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 	// 保存待处理的上传任务（稍后异步完成后入库）
 	uploadTask := &models.UploadTask{
 		Hash:              hash,
+		PHash:             pHash, // 保存 pHash
 		FileID:            localUploadResp.FileID,
 		JobID:             localUploadResp.JobID,
 		StatusURL:         localUploadResp.StatusURL,
@@ -176,6 +215,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		FileID:       localUploadResp.FileID,
 		URL:          h.cfg.FileServer.BaseURL + info.AccessURL,
 		Hash:         hash,
+		PHash:        pHash, // 保存 pHash
 		ThumbnailURL: h.cfg.FileServer.BaseURL + thumbnail,
 		Tags:         []string{},
 	})
@@ -223,6 +263,21 @@ func (h *ArtworkHandler) calculateFileHash(file io.Reader) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func (h *ArtworkHandler) calculatePHash(src io.Reader) (int64, error) {
+	// 解码图片
+	img, _, err := image.Decode(src)
+	if err != nil {
+		return 0, fmt.Errorf("解码图片失败: %w", err)
+	}
+
+	hash, err := goimagehash.PerceptionHash(img)
+	if err != nil {
+		return 0, fmt.Errorf("计算 pHash 失败: %w", err)
+	}
+
+	return int64(hash.GetHash()), nil
 }
 
 func (h *ArtworkHandler) PollUploadJobStatus(ctx context.Context, uploadTask *models.UploadTask, requestID string) error {

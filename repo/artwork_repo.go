@@ -11,6 +11,7 @@ type ArtworkRepo interface {
 	GetByID(id uint) (*models.Artwork, error)
 	GetByHash(hash string, artwork *models.Artwork) error
 	GetAll(offset, limit int, filters map[string]any) ([]models.Artwork, int64, error)
+	GetAllWithPHash() ([]models.Artwork, error)
 	GetRandom(limit int, filters map[string]any) ([]models.Artwork, error)
 	Update(id uint, artwork *models.Artwork) error
 	Delete(id uint) error
@@ -44,6 +45,14 @@ func (r *artworkRepo) GetByID(id uint) (*models.Artwork, error) {
 
 func (r *artworkRepo) GetByHash(hash string, artwork *models.Artwork) error {
 	return r.db.Where("hash = ?", hash).First(artwork).Error
+}
+
+func (r *artworkRepo) GetAllWithPHash() ([]models.Artwork, error) {
+	var artworks []models.Artwork
+	if err := r.db.Where("phash IS NOT NULL AND phash != ''").Find(&artworks).Error; err != nil {
+		return nil, err
+	}
+	return artworks, nil
 }
 
 func (r *artworkRepo) GetAll(offset, limit int, filters map[string]any) ([]models.Artwork, int64, error) {

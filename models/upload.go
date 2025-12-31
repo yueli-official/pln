@@ -2,6 +2,7 @@ package models
 
 type UploadTask struct {
 	ID                string
+	PHash             int64
 	Hash              string
 	JobID             string
 	StatusURL         string

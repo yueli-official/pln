@@ -13,6 +13,7 @@ type Artwork struct {
 	URL          string         `json:"url"`                                       // CDN访问链接
 	ThumbnailURL string         `json:"thumbnail_url"`                             // 缩略图URL
 	Hash         string         `gorm:"index:idx_hash;not null" json:"hash"`       // 文件哈希
+	PHash        int64          `gorm:"index:idx_hash;column:phash;" json:"phash"`
 	Views        int            `gorm:"default:0" json:"views"`
 	Likes        int            `gorm:"default:0" json:"likes"`
 	Bookmarks    int            `gorm:"default:0" json:"bookmarks"`
@@ -31,6 +32,7 @@ func (Artwork) TableName() string {
 type ArtworkCreateRequest struct {
 	FileID       string   `json:"file_id" binding:"required"`
 	URL          string   `json:"url"`
+	PHash        int64    `json:"phash"`
 	Hash         string   `json:"hash"`
 	ThumbnailURL string   `json:"thumbnail_url"`
 	Tags         []string `json:"tags"`

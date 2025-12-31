@@ -5,12 +5,14 @@ import (
 	"pln/models"
 	"pln/repo"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 type ArtworkService interface {
 	CreateArtwork(req *models.ArtworkCreateRequest) (*models.ArtworkResponse, error)
 	GetArtwork(id uint) (*models.ArtworkResponse, error)
+	GetByPHashSimilarity(int64, int) ([]models.ArtworkResponse, error)
 	GetByHash(hash string) (*models.Artwork, error)
 	GetArtworks(page, pageSize int, filters map[string]any) ([]models.ArtworkResponse, int64, error)
 	GetRandomArtworks(limit int, filters map[string]any) ([]models.ArtworkResponse, error)
@@ -38,6 +40,7 @@ func (s *artworkService) CreateArtwork(req *models.ArtworkCreateRequest) (*model
 		URL:          req.URL,
 		ThumbnailURL: req.ThumbnailURL,
 		Hash:         req.Hash,
+		PHash:        req.PHash,
 		FileID:       req.FileID,
 		Views:        0,
 		Likes:        0,
@@ -83,6 +86,79 @@ func (s *artworkService) GetByHash(hash string) (*models.Artwork, error) {
 		return nil, err
 	}
 	return &artwork, nil
+}
+
+// GetByPHashSimilarity 通过 pHash 相似度查询相似的作品
+func (s *artworkService) GetByPHashSimilarity(pHash int64, threshold int) ([]models.ArtworkResponse, error) {
+	logger := log.With().Str("component", "ArtworkService").Logger()
+
+	logger.Debug().
+		Int64("phash", pHash).
+		Int("threshold", threshold).
+		Msg("开始查询相似图片")
+
+	// 从数据库获取所有有 pHash 的作品
+	artworks, err := s.repo.GetAllWithPHash()
+	if err != nil {
+		logger.Error().Err(err).Msg("查询数据库失败")
+		return nil, err
+	}
+
+	logger.Debug().Int("total_count", len(artworks)).Msg("查询到的总记录数")
+
+	if len(artworks) == 0 {
+		logger.Debug().Msg("数据库中没有历史 pHash 记录")
+		return []models.ArtworkResponse{}, nil
+	}
+
+	var similarArtworks []models.ArtworkResponse
+
+	// 遍历所有作品，计算汉明距离
+	for _, artwork := range artworks {
+		if artwork.PHash == 0 {
+			continue
+		}
+
+		// 计算汉明距离
+		distance := hammingDistance(pHash, artwork.PHash)
+
+		logger.Debug().
+			Uint("artwork_id", artwork.ID).
+			Int("distance", distance).
+			Msg("汉明距离计算结果")
+
+		// 距离在阈值内，视为相似
+		if distance <= threshold {
+			logger.Info().
+				Uint("artwork_id", artwork.ID).
+				Int("distance", distance).
+				Msg("发现相似图片")
+
+			similarArtworks = append(similarArtworks, models.ArtworkResponse{
+				ID:           artwork.ID,
+				URL:          artwork.URL,
+				ThumbnailURL: artwork.ThumbnailURL,
+				CreatedAt:    artwork.CreatedAt,
+				UpdatedAt:    artwork.UpdatedAt,
+			})
+		}
+	}
+
+	logger.Debug().Int("similar_count", len(similarArtworks)).Msg("相似图片查询完成")
+
+	return similarArtworks, nil
+}
+
+// hammingDistance 计算两个 pHash 的汉明距离
+func hammingDistance(hash1, hash2 int64) int {
+	// XOR 后统计 1 的个数
+	xor := hash1 ^ hash2
+	distance := 0
+	for xor > 0 {
+		distance += int(xor & 1)
+		xor >>= 1
+	}
+	return distance
 }
 
 func (s *artworkService) GetArtworks(page, pageSize int, filters map[string]any) ([]models.ArtworkResponse, int64, error) {

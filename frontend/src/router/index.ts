@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     component: Upload,
     meta: {
       title: '上传作品',
-      requiresAuth: true,
+      // requiresAuth: true,
     },
   },
 

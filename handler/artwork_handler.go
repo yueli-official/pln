@@ -146,7 +146,8 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 				Int("similar_count", len(similarArtworks)).
 				Uint("similar_artwork_id", similarArtworks[0].ID).
 				Msg("发现相似图片")
-			response.Conflict("图片过于相似，已存在").
+
+			response.Conflict(fmt.Sprintf("图片过于相似，已存在，相似ID：%d", similarArtworks[0].ID)).
 				WithRequestID(requestID).
 				GJSON(c)
 			return

@@ -8,7 +8,7 @@
     >
       <img
         :src="artwork.thumbnail_url || artwork.url"
-        :alt="'普拉娜'"
+        :alt="'普拉娜 碧蓝档案 壁纸'"
         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
       />
 

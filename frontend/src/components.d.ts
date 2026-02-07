@@ -13,8 +13,10 @@ declare module 'vue' {
   export interface GlobalComponents {
     ArtworkCard: typeof import('./components/ArtworkCard.vue')['default']
     HeaderArea: typeof import('./components/HeaderArea.vue')['default']
+    NavigationCard: typeof import('./components/NavigationCard.vue')['default']
     PageNavigator: typeof import('./components/PageNavigator.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StatCard: typeof import('./components/StatCard.vue')['default']
   }
 }

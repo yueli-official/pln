@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-background text-foreground py-8 px-4 min-h-screen">
+  <div class="bg-background text-foreground py-8 px-4">
     <div class="max-w-4xl mx-auto">
       <!-- 页面标题 -->
       <div class="mb-8">

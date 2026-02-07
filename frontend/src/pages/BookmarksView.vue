@@ -25,7 +25,7 @@
         <span class="icon-[lucide--heart] text-6xl text-muted-foreground/50 mb-4"></span>
         <p class="text-muted-foreground text-lg mb-6">暂无收藏作品</p>
         <RouterLink
-          to="/"
+          to="/browse"
           class="px-6 py-2 rounded-full bg-primary text-white hover:shadow-lg transition-all"
         >
           去浏览作品

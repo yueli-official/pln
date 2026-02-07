@@ -1,9 +1,8 @@
 <template>
-  <div class="min-h-screen bg-background text-foreground">
+  <div class="min-h-screen bg-background text-foreground flex flex-col">
     <HeaderArea></HeaderArea>
-    <HomeArea></HomeArea>
 
-    <main>
+    <main class="flex-1 overflow-y-scroll">
       <RouterView />
     </main>
     <ToastContainer></ToastContainer>

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-background text-foreground py-12 px-4 min-h-screen">
+  <div class="bg-background text-foreground py-12 px-4">
     <div class="max-w-6xl mx-auto">
       <!-- 返回按钮 -->
       <RouterLink

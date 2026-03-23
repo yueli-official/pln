@@ -1,44 +1,43 @@
 <template>
-  <div class="bg-background text-foreground py-12 px-4">
+  <div class="bg-background text-foreground py-10 px-4">
     <div class="max-w-7xl mx-auto">
-      <!-- 页面标题和刷新按钮 -->
-      <div class="flex items-center justify-between mb-10">
+      <!-- 页面标题 -->
+      <div class="mb-8 flex items-end justify-between">
         <div>
-          <h1 class="text-4xl font-bold mb-2">随机发现</h1>
-          <p class="text-muted-foreground">随机普拉娜</p>
+          <h1 class="text-3xl font-bold mb-1">随机发现</h1>
+          <p class="text-sm text-muted-foreground">每次都有惊喜</p>
         </div>
         <button
           @click="refreshArtworks"
           :disabled="artworkStore.loading"
-          class="px-6 py-3 rounded-full bg-linear-to-r from-primary to-primary/80 text-white font-medium hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex items-center gap-2"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-95 transition-all duration-150 disabled:opacity-50"
         >
-          <span class="icon-[lucide--shuffle] text-lg"></span>
+          <span
+            class="icon-[lucide--shuffle] size-4"
+            :class="artworkStore.loading ? 'animate-spin' : ''"
+          ></span>
           {{ artworkStore.loading ? '加载中' : '换一批' }}
         </button>
       </div>
 
       <!-- 错误提示 -->
-      <div v-if="artworkStore.error" class="alert alert-error mb-6 rounded-lg">
-        {{ artworkStore.error.message }}
+      <div v-if="artworkStore.error" class="flex items-center gap-3 mb-6 p-4 rounded-xl border border-error/20 bg-error/5 text-error text-sm">
+        <span class="icon-[lucide--circle-alert] size-5 shrink-0"></span>
+        <span>{{ artworkStore.error.message }}</span>
       </div>
 
-      <!-- 加载中 -->
+      <!-- 骨架屏 -->
       <div
         v-if="artworkStore.loading && artworkStore.artworks.length === 0"
-        class="flex justify-center items-center py-20"
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
       >
-        <div class="relative w-16 h-16">
-          <div class="absolute inset-0 rounded-full border-4 border-border"></div>
-          <div
-            class="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"
-          ></div>
-        </div>
+        <div v-for="i in 24" :key="i" class="aspect-square rounded-xl bg-muted animate-pulse"></div>
       </div>
 
       <!-- 作品网格 -->
       <div
-        v-if="artworkStore.artworks.length > 0"
-        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-12"
+        v-else-if="artworkStore.artworks.length > 0"
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
       >
         <ArtworkCard
           v-for="artwork in artworkStore.artworks"
@@ -51,14 +50,14 @@
 
       <!-- 空状态 -->
       <div
-        v-if="!artworkStore.loading && artworkStore.artworks.length === 0"
-        class="flex flex-col items-center justify-center py-20"
+        v-else-if="!artworkStore.loading"
+        class="flex flex-col items-center justify-center py-24"
       >
-        <span class="icon-[lucide--inbox] text-6xl text-muted-foreground/50 mb-4"></span>
-        <p class="text-muted-foreground text-lg mb-4">暂无作品</p>
+        <span class="icon-[lucide--inbox] size-16 text-muted-foreground/30 mb-4"></span>
+        <p class="text-muted-foreground mb-6">暂无作品</p>
         <button
           @click="refreshArtworks"
-          class="px-6 py-2 rounded-full bg-primary text-white hover:shadow-lg transition-all"
+          class="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
         >
           重新加载
         </button>
@@ -105,5 +104,3 @@ const handleBookmark = async (id: number): Promise<void> => {
 
 refreshArtworks()
 </script>
-
-<style scoped></style>

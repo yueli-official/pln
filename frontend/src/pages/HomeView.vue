@@ -1,84 +1,73 @@
 <template>
-  <div
-    class="bg-linear-to-br from-background via-background to-background/95 text-foreground py-16 px-4 relative overflow-hidden"
-  >
-    <!-- 装饰背景 -->
-    <div class="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10"></div>
-    <div class="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+  <div class="bg-background text-foreground min-h-[calc(100vh-4rem)] px-4 py-16 relative overflow-hidden">
+    <!-- 背景光晕 -->
+    <div class="pointer-events-none absolute -top-32 -left-32 w-[36rem] h-[36rem] bg-primary/10 rounded-full blur-[120px]"></div>
+    <div class="pointer-events-none absolute -bottom-32 -right-32 w-[36rem] h-[36rem] bg-primary/8 rounded-full blur-[120px]"></div>
 
-    <div class="max-w-7xl mx-auto">
-      <!-- 页面标题区域 -->
-      <div class="text-center mb-16">
-        <h1
-          class="text-3xl md:text-5xl font-bold mb-4 bg-linear-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent"
-        >
-          普拉娜图像档案
+    <div class="max-w-5xl mx-auto relative">
+      <!-- 英雄区 -->
+      <div class="text-center mb-20">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
+          <span class="icon-[lucide--sparkles] size-3"></span>
+          碧蓝档案 · 普拉娜图像档案
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold mb-5 leading-tight">
+          <span class="bg-linear-to-r from-primary via-primary/90 to-primary/60 bg-clip-text text-transparent">
+            普拉娜
+          </span>
+          <br />
+          <span class="text-foreground/90 text-3xl md:text-5xl font-semibold">图像档案库</span>
         </h1>
-        <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
-          收录与普拉娜相关的精选插画与同人创作
+        <p class="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+          收录与普拉娜相关的精选插画、官方立绘与同人创作
         </p>
       </div>
 
       <!-- 导航卡片 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <!-- 浏览插画 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <RouterLink
           to="/browse"
-          class="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-8 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+          class="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-7 hover:border-primary/40 hover:bg-card/80 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
         >
-          <div
-            class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
-          ></div>
+          <div class="absolute inset-0 bg-linear-to-br from-primary/0 via-primary/0 to-primary/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
           <div class="relative">
-            <span class="icon-[lucide--image] text-5xl text-primary mb-4 block"></span>
-            <h3 class="text-2xl font-semibold mb-2">浏览插画</h3>
-            <p class="text-sm text-muted-foreground">查看所有普拉娜相关插画内容</p>
+            <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:bg-primary/15 transition-colors">
+              <span class="icon-[lucide--images] size-6 text-primary"></span>
+            </div>
+            <h3 class="text-lg font-semibold mb-1.5">浏览插画</h3>
+            <p class="text-sm text-muted-foreground leading-relaxed">查看全部普拉娜相关插画内容</p>
           </div>
-          <div
-            class="absolute top-6 right-6 text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <span class="icon-[lucide--arrow-right] text-2xl"></span>
-          </div>
+          <span class="absolute bottom-7 right-7 icon-[lucide--arrow-right] size-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200"></span>
         </RouterLink>
 
-        <!-- 随机邂逅 -->
         <RouterLink
           to="/random"
-          class="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-8 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+          class="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-7 hover:border-primary/40 hover:bg-card/80 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
         >
-          <div
-            class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
-          ></div>
+          <div class="absolute inset-0 bg-linear-to-br from-primary/0 via-primary/0 to-primary/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
           <div class="relative">
-            <span class="icon-[lucide--shuffle] text-5xl text-primary mb-4 block"></span>
-            <h3 class="text-2xl font-semibold mb-2">随机邂逅</h3>
-            <p class="text-sm text-muted-foreground">随机展示一张普拉娜插画</p>
+            <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:bg-primary/15 transition-colors">
+              <span class="icon-[lucide--shuffle] size-6 text-primary"></span>
+            </div>
+            <h3 class="text-lg font-semibold mb-1.5">随机邂逅</h3>
+            <p class="text-sm text-muted-foreground leading-relaxed">随机展示一批普拉娜插画</p>
           </div>
-          <div
-            class="absolute top-6 right-6 text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <span class="icon-[lucide--arrow-right] text-2xl"></span>
-          </div>
+          <span class="absolute bottom-7 right-7 icon-[lucide--arrow-right] size-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200"></span>
         </RouterLink>
 
-        <!-- 我的收藏 -->
         <RouterLink
           to="/bookmarks"
-          class="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-8 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+          class="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-7 hover:border-primary/40 hover:bg-card/80 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
         >
-          <div
-            class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
-          ></div>
+          <div class="absolute inset-0 bg-linear-to-br from-primary/0 via-primary/0 to-primary/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
           <div class="relative">
-            <span class="icon-[lucide--bookmark] text-5xl text-primary mb-4 block"></span>
-            <h3 class="text-2xl font-semibold mb-2">我的收藏</h3>
-            <p class="text-sm text-muted-foreground">保存你最喜欢的普拉娜插画</p>
+            <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:bg-primary/15 transition-colors">
+              <span class="icon-[lucide--bookmark] size-6 text-primary"></span>
+            </div>
+            <h3 class="text-lg font-semibold mb-1.5">我的收藏</h3>
+            <p class="text-sm text-muted-foreground leading-relaxed">保存你最喜欢的普拉娜插画</p>
           </div>
-          <div
-            class="absolute top-6 right-6 text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <span class="icon-[lucide--arrow-right] text-2xl"></span>
-          </div>
+          <span class="absolute bottom-7 right-7 icon-[lucide--arrow-right] size-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200"></span>
         </RouterLink>
       </div>
     </div>

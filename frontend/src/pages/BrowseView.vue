@@ -1,45 +1,45 @@
 <template>
-  <div class="bg-background text-foreground py-12 px-4">
+  <div class="bg-background text-foreground py-10 px-4">
     <div class="max-w-7xl mx-auto">
       <!-- 页面标题 -->
-      <div class="mb-10">
-        <h1 class="text-4xl font-bold mb-2">浏览作品</h1>
-        <p class="text-muted-foreground">共 {{ artworkStore.total }} 个作品</p>
+      <div class="mb-8 flex items-end justify-between">
+        <div>
+          <h1 class="text-3xl font-bold mb-1">浏览作品</h1>
+          <p class="text-sm text-muted-foreground">
+            共 <span class="text-primary font-medium">{{ artworkStore.total }}</span> 个作品
+          </p>
+        </div>
+        <div v-if="artworkStore.loading && artworkStore.artworks.length > 0" class="flex items-center gap-2 text-sm text-muted-foreground">
+          <span class="icon-[lucide--loader-2] size-4 animate-spin"></span>
+          加载中
+        </div>
       </div>
 
       <!-- 错误提示 -->
       <div
         v-if="artworkStore.error"
-        class="alert alert-error mb-6 rounded-lg border border-error/20"
+        class="flex items-center gap-3 mb-6 p-4 rounded-xl border border-error/20 bg-error/5 text-error text-sm"
       >
-        <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4v2m0 0a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
+        <span class="icon-[lucide--circle-alert] size-5 shrink-0"></span>
         <span>{{ artworkStore.error.message }}</span>
       </div>
 
-      <!-- 加载中 -->
+      <!-- 骨架屏 -->
       <div
         v-if="artworkStore.loading && artworkStore.artworks.length === 0"
-        class="flex justify-center items-center py-20"
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-10"
       >
-        <div class="relative w-16 h-16">
-          <div class="absolute inset-0 rounded-full border-4 border-border"></div>
-          <div
-            class="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"
-          ></div>
-        </div>
+        <div
+          v-for="i in pageSize"
+          :key="i"
+          class="aspect-square rounded-xl bg-muted animate-pulse"
+        ></div>
       </div>
 
       <!-- 作品网格 -->
       <div
-        v-if="artworkStore.artworks.length > 0"
-        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-12"
+        v-else-if="artworkStore.artworks.length > 0"
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-10"
       >
         <ArtworkCard
           v-for="artwork in artworkStore.artworks"
@@ -52,15 +52,15 @@
 
       <!-- 空状态 -->
       <div
-        v-if="!artworkStore.loading && artworkStore.artworks.length === 0"
-        class="flex flex-col items-center justify-center py-20"
+        v-else-if="!artworkStore.loading"
+        class="flex flex-col items-center justify-center py-24"
       >
-        <span class="icon-[lucide--inbox] text-6xl text-muted-foreground/50 mb-4"></span>
-        <p class="text-muted-foreground text-lg">暂无作品</p>
+        <span class="icon-[lucide--inbox] size-16 text-muted-foreground/30 mb-4"></span>
+        <p class="text-muted-foreground">暂无作品</p>
       </div>
 
       <!-- 分页器 -->
-      <div v-if="artworkStore.total > 0" class="flex justify-center mb-8">
+      <div v-if="artworkStore.total > pageSize" class="flex justify-center pb-4">
         <PageNavigator
           v-model:currentPage="currentPage"
           :total="artworkStore.total"

@@ -59,36 +59,54 @@
         <p class="text-muted-foreground text-lg">暂无作品</p>
       </div>
 
-      <!-- 加载更多 -->
-      <div v-if="artworkStore.hasMoreArtworks" class="flex justify-center">
-        <button
-          @click="loadMore"
-          :disabled="artworkStore.loading"
-          class="px-8 py-3 rounded-full border border-primary/50 bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-all duration-300 disabled:opacity-50"
-        >
-          {{ artworkStore.loading ? '加载中...' : '加载更多作品' }}
-        </button>
+      <!-- 分页器 -->
+      <div v-if="artworkStore.total > 0" class="flex justify-center mb-8">
+        <PageNavigator
+          v-model:currentPage="currentPage"
+          :total="artworkStore.total"
+          :page-size="pageSize"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useArtworkStore } from '@/stores/artwork'
 import ArtworkCard from '@/components/ArtworkCard.vue'
+import PageNavigator from '@/components/PageNavigator.vue'
 import { toast } from '@yuelioi/toast'
 
 const router = useRouter()
+const route = useRoute()
 const artworkStore = useArtworkStore()
 
-const loadArtworks = async (): Promise<void> => {
-  await artworkStore.fetchArtworks(1, artworkStore.pageSize)
+const pageSize = 20
+const currentPage = ref<number>(parseInt((route.query.page as string) || '1') || 1)
+
+const loadArtworks = async (page: number): Promise<void> => {
+  await artworkStore.fetchArtworks(page, pageSize)
 }
 
-const loadMore = async (): Promise<void> => {
-  await artworkStore.loadMoreArtworks()
-}
+// 翻页时更新 URL
+watch(currentPage, (page) => {
+  router.replace({ query: { ...route.query, page: page === 1 ? undefined : String(page) } })
+  loadArtworks(page)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
+
+// 浏览器前进/后退时同步页码
+watch(
+  () => route.query.page,
+  (page) => {
+    const p = parseInt((page as string) || '1') || 1
+    if (p !== currentPage.value) {
+      currentPage.value = p
+    }
+  },
+)
 
 const navigateToDetail = (id: number): void => {
   router.push(`/artwork/${id}`)
@@ -108,5 +126,5 @@ const handleLike = async (id: number): Promise<void> => {
   }
 }
 
-loadArtworks()
+loadArtworks(currentPage.value)
 </script>

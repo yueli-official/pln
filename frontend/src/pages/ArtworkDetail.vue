@@ -2,13 +2,13 @@
   <div class="bg-background text-foreground py-12 px-4">
     <div class="max-w-6xl mx-auto">
       <!-- 返回按钮 -->
-      <RouterLink
-        to="/browse"
+      <button
+        @click="router.back()"
         class="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-card/50 hover:bg-card transition-colors border border-border/50"
       >
         <span class="icon-[lucide--arrow-left]"></span>
         返回
-      </RouterLink>
+      </button>
 
       <!-- 加载状态 -->
       <div v-if="artworkStore.loading" class="flex justify-center items-center py-20">

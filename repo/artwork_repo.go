@@ -62,7 +62,18 @@ func (r *artworkRepo) GetAll(offset, limit int, filters map[string]any) ([]model
 	query := r.db.Model(&models.Artwork{})
 
 	if tags, ok := filters["tags"]; ok {
-		query = query.Where("tags LIKE ?", "%"+tags.(string)+"%")
+		switch v := tags.(type) {
+		case string:
+			if v != "" {
+				query = query.Where("tags LIKE ?", "%"+v+"%")
+			}
+		case []string:
+			for _, tag := range v {
+				if tag != "" {
+					query = query.Where("tags LIKE ?", "%"+tag+"%")
+				}
+			}
+		}
 	}
 
 	// 计算总数
@@ -84,7 +95,18 @@ func (r *artworkRepo) GetRandom(limit int, filters map[string]any) ([]models.Art
 	query := r.db.Model(&models.Artwork{})
 
 	if tags, ok := filters["tags"]; ok {
-		query = query.Where("tags LIKE ?", "%"+tags.(string)+"%")
+		switch v := tags.(type) {
+		case string:
+			if v != "" {
+				query = query.Where("tags LIKE ?", "%"+v+"%")
+			}
+		case []string:
+			for _, tag := range v {
+				if tag != "" {
+					query = query.Where("tags LIKE ?", "%"+tag+"%")
+				}
+			}
+		}
 	}
 
 	// 随机排序并限制数量

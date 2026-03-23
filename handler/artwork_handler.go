@@ -201,7 +201,7 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 
 	info, err := h.fileService.GetFileInfo(localUploadResp.FileID)
 	if err != nil {
-		response.BusinessError("获取文件信息失败").GJSON(nil)
+		response.BusinessError("获取文件信息失败").GJSON(c)
 		return
 	}
 	thumbnail := ""
@@ -308,9 +308,8 @@ func (h *ArtworkHandler) PollUploadJobStatus(ctx context.Context, uploadTask *mo
 
 		if localProgress != nil && localProgress.Status == "task.completed" {
 			return nil
-		} else {
-			logger.Info().Str("progress", localProgress.Status)
-
+		} else if localProgress != nil {
+			logger.Info().Str("progress", localProgress.Status).Msg("等待上传任务完成")
 		}
 
 		// 未完成，等待后重试

@@ -83,7 +83,7 @@ const router = useRouter()
 const route = useRoute()
 const artworkStore = useArtworkStore()
 
-const pageSize = 20
+const pageSize = 24
 const currentPage = ref<number>(parseInt((route.query.page as string) || '1') || 1)
 
 const loadArtworks = async (page: number): Promise<void> => {

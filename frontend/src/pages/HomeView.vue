@@ -30,7 +30,7 @@
             class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
           ></div>
           <div class="relative">
-            <div class="text-5xl mb-4">🎨</div>
+            <span class="icon-[lucide--image] text-5xl text-primary mb-4 block"></span>
             <h3 class="text-2xl font-semibold mb-2">浏览插画</h3>
             <p class="text-sm text-muted-foreground">查看所有普拉娜相关插画内容</p>
           </div>
@@ -50,7 +50,7 @@
             class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
           ></div>
           <div class="relative">
-            <div class="text-5xl mb-4">✨</div>
+            <span class="icon-[lucide--shuffle] text-5xl text-primary mb-4 block"></span>
             <h3 class="text-2xl font-semibold mb-2">随机邂逅</h3>
             <p class="text-sm text-muted-foreground">随机展示一张普拉娜插画</p>
           </div>
@@ -70,7 +70,7 @@
             class="absolute inset-0 bg-linear-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
           ></div>
           <div class="relative">
-            <div class="text-5xl mb-4">❤️</div>
+            <span class="icon-[lucide--bookmark] text-5xl text-primary mb-4 block"></span>
             <h3 class="text-2xl font-semibold mb-2">我的收藏</h3>
             <p class="text-sm text-muted-foreground">保存你最喜欢的普拉娜插画</p>
           </div>

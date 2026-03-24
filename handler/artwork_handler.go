@@ -189,7 +189,9 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		LastStatusCheckAt: time.Now().Unix(),
 	}
 
-	if err := h.PollUploadJobStatus(ctx, uploadTask, requestID); err != nil {
+	pollCtx, pollCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer pollCancel()
+	if err := h.PollUploadJobStatus(pollCtx, uploadTask, requestID); err != nil {
 		logger.Error().Err(err).Msg("保存上传任务失败")
 		response.InternalError("保存上传任务失败").
 			WithRequestID(requestID).

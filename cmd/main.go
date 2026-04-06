@@ -81,7 +81,12 @@ func main() {
 	artworkRepo := repo.NewArtworkRepo(db)
 	artworkService := service.NewArtworkService(artworkRepo)
 
-	uploader := storage.NewThirdPartyUploader(conf.Config.FileServer.BaseURL, conf.Config.FileServer.AppID, conf.Config.FileServer.SpaceID, conf.Config.FileServer.APIKey)
+	uploader := storage.NewLocalUploader(
+		conf.Config.FileServer.StoragePath,
+		"/api/v1/files",
+		conf.Config.ThumbnailConfig,
+		conf.Config.PreviewConfig,
+	)
 
 	uploadService := service.NewFileService(
 		conf.Config, artworkRepo, uploader,
@@ -105,8 +110,46 @@ func main() {
 	corsConfig.AllowCredentials = true
 	corsConfig.MaxAge = 24 * time.Hour
 
+	// 扫���本地目录，导入未入库的图片，并补全已有记录缺失的 URL
+	scannedFiles := uploader.ScanFiles()
+	imported, updated := 0, 0
+	for _, sf := range scannedFiles {
+		var existing models.Artwork
+		if err := db.Where("file_id = ?", sf.FileID).First(&existing).Error; err == nil {
+			// 已存在，检查是否需要补全缺失的 URL
+			updates := map[string]any{}
+			if existing.ThumbnailURL == "" && sf.ThumbnailURL != "" {
+				updates["thumbnail_url"] = sf.ThumbnailURL
+			}
+			if existing.PreviewURL == "" && sf.PreviewURL != "" {
+				updates["preview_url"] = sf.PreviewURL
+			}
+			if len(updates) > 0 {
+				db.Model(&existing).Updates(updates)
+				updated++
+			}
+			continue
+		}
+		artwork := &models.Artwork{
+			FileID:       sf.FileID,
+			Hash:         sf.FileID,
+			URL:          sf.URL,
+			ThumbnailURL: sf.ThumbnailURL,
+			PreviewURL:   sf.PreviewURL,
+		}
+		artwork.SetTags([]string{})
+		if err := db.Create(artwork).Error; err != nil {
+			logger.Warn().Err(err).Str("file_id", sf.FileID).Msg("导入文件失败")
+			continue
+		}
+		imported++
+	}
+	if imported > 0 || updated > 0 {
+		logger.Info().Int("imported", imported).Int("updated", updated).Int("total_scanned", len(scannedFiles)).Msg("扫描目录完成")
+	}
+
 	// 输出
-	logger.Info().Str("app_id", conf.Config.FileServer.AppID).Str("file_server", conf.Config.FileServer.BaseURL).Msg("文件服务注册完毕")
+	logger.Info().Str("storage_path", conf.Config.FileServer.StoragePath).Msg("本地文件存储服务注册完毕")
 
 	// 配置默认端口
 	port := conf.Config.Server.Port
@@ -140,6 +183,9 @@ func main() {
 
 		// 公开路由
 		public := api.Group("/")
+
+		// 本地文件静态服务
+		public.Static("/files", conf.Config.FileServer.StoragePath)
 
 		public.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

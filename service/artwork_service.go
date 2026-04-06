@@ -39,6 +39,7 @@ func (s *artworkService) CreateArtwork(req *models.ArtworkCreateRequest) (*model
 	artwork := &models.Artwork{
 		URL:          req.URL,
 		ThumbnailURL: req.ThumbnailURL,
+		PreviewURL:   req.PreviewURL,
 		Hash:         req.Hash,
 		PHash:        req.PHash,
 		FileID:       req.FileID,

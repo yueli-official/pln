@@ -206,11 +206,13 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		response.BusinessError("获取文件信息失败").GJSON(c)
 		return
 	}
-	thumbnail := ""
-
+	var thumbnailURL, previewURL string
 	for _, v := range info.Variants {
-		if v.Type == "thumbnail" {
-			thumbnail = v.AccessURL
+		switch v.Type {
+		case "thumbnail":
+			thumbnailURL = h.cfg.FileServer.BaseURL + v.AccessURL
+		case "preview":
+			previewURL = h.cfg.FileServer.BaseURL + v.AccessURL
 		}
 	}
 
@@ -218,8 +220,9 @@ func (h *ArtworkHandler) UploadAndCreateArtwork(c *gin.Context) {
 		FileID:       localUploadResp.FileID,
 		URL:          h.cfg.FileServer.BaseURL + info.AccessURL,
 		Hash:         hash,
-		PHash:        pHash, // 保存 pHash
-		ThumbnailURL: h.cfg.FileServer.BaseURL + thumbnail,
+		PHash:        pHash,
+		ThumbnailURL: thumbnailURL,
+		PreviewURL:   previewURL,
 		Tags:         []string{},
 	})
 

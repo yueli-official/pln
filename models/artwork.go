@@ -10,8 +10,9 @@ import (
 type Artwork struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	FileID       string         `gorm:"uniqueIndex:idx_file_id;not null" json:"-"` // 本地备份文件ID
-	URL          string         `json:"url"`                                       // CDN访问链接
+	URL          string         `json:"url"`                                       // 原图链接
 	ThumbnailURL string         `json:"thumbnail_url"`                             // 缩略图URL
+	PreviewURL   string         `json:"preview_url"`                               // 预览图URL
 	Hash         string         `gorm:"index:idx_hash;not null" json:"hash"`       // 文件哈希
 	PHash        int64          `gorm:"index:idx_phash;column:phash;" json:"phash"`
 	Views        int            `gorm:"default:0" json:"views"`
@@ -35,6 +36,7 @@ type ArtworkCreateRequest struct {
 	PHash        int64    `json:"phash"`
 	Hash         string   `json:"hash"`
 	ThumbnailURL string   `json:"thumbnail_url"`
+	PreviewURL   string   `json:"preview_url"`
 	Tags         []string `json:"tags"`
 }
 
@@ -50,6 +52,7 @@ type ArtworkResponse struct {
 	ID           uint      `json:"id"`
 	URL          string    `json:"url"`
 	ThumbnailURL string    `json:"thumbnail_url"`
+	PreviewURL   string    `json:"preview_url"`
 	Views        int       `json:"views"`
 	Likes        int       `json:"likes"`
 	Bookmarks    int       `json:"bookmarks"`
@@ -72,6 +75,7 @@ func (a *Artwork) ToResponse() ArtworkResponse {
 		ID:           a.ID,
 		URL:          a.URL,
 		ThumbnailURL: a.ThumbnailURL,
+		PreviewURL:   a.PreviewURL,
 		Views:        a.Views,
 		Likes:        a.Likes,
 		Bookmarks:    a.Bookmarks,

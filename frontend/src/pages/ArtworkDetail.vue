@@ -34,7 +34,7 @@
         <div class="lg:col-span-2">
           <div class="group relative rounded-2xl overflow-hidden bg-muted shadow-2xl shadow-black/20">
             <img
-              :src="artworkStore.currentArtwork.url"
+              :src="artworkStore.currentArtwork.preview_url || artworkStore.currentArtwork.url"
               alt="普拉娜"
               class="w-full h-auto block"
             />

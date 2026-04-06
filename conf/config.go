@@ -11,6 +11,7 @@ type AppConfig struct {
 	Database        DatabaseConfig   `mapstructure:"database"`
 	FileServer      FileServerConfig `mapstructure:"file_server"`
 	ThumbnailConfig ThumbnailOption  `mapstructure:"thumbnail"`
+	PreviewConfig   ThumbnailOption  `mapstructure:"preview"`
 }
 
 type DatabaseConfig struct {
@@ -31,10 +32,11 @@ type FileOperationConfig struct {
 }
 
 type FileServerConfig struct {
-	BaseURL string `mapstructure:"base_url"` // 基础URL: http://localhost:9001
-	APIKey  string `mapstructure:"api_key"`  // API密钥: website_api_key_123456
-	AppID   string `mapstructure:"app_id"`   //
-	SpaceID string `mapstructure:"space_id"` //
+	BaseURL     string `mapstructure:"base_url"`     // 基础URL，本地存储时留空
+	APIKey      string `mapstructure:"api_key"`      // API密钥
+	AppID       string `mapstructure:"app_id"`       //
+	SpaceID     string `mapstructure:"space_id"`     //
+	StoragePath string `mapstructure:"storage_path"` // 本地存储路径，如 ./data/uploads
 }
 
 type ThumbnailOption struct {

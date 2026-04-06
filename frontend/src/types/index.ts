@@ -76,6 +76,7 @@ export interface Artwork {
   id: number
   url: string
   thumbnail_url: string
+  preview_url: string
   views: number
   likes: number
   bookmarks: number

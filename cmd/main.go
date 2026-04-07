@@ -23,7 +23,6 @@ import (
 	"github.com/Yuelioi/gkit/log/zerologx/adapter/gormzerolog"
 	"github.com/Yuelioi/gkit/web/gin/middleware/apikey"
 	"github.com/Yuelioi/gkit/web/gin/middleware/log/gzero"
-	"github.com/Yuelioi/gkit/web/gin/middleware/ratelimit"
 	"github.com/Yuelioi/gkit/web/gin/middleware/requestid"
 
 	"github.com/Yuelioi/gkit/web/gin/server"
@@ -110,7 +109,7 @@ func main() {
 	corsConfig.AllowCredentials = true
 	corsConfig.MaxAge = 24 * time.Hour
 
-	// 扫���本地目录，导入未入库的图片，并补全已有记录缺失的 URL
+	// 扫描本地目录，导入未入库的图片，并补全已有记录缺失的 URL
 	scannedFiles := uploader.ScanFiles()
 	imported, updated := 0, 0
 	for _, sf := range scannedFiles {
@@ -167,7 +166,7 @@ func main() {
 		Middlewares: []gin.HandlerFunc{
 			gzero.Default(logger),
 			gzero.GinRecovery(logger),
-			ratelimit.Default(),
+			// ratelimit.Default(),
 			cors.New(corsConfig),
 			requestid.RequestID(),
 			gzero.RequestIDMiddleware(),
